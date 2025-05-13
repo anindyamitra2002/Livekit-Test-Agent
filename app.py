@@ -64,7 +64,7 @@ if 'user' not in st.session_state:
 if 'users_db' not in st.session_state:
     # Initialize with a default admin user (in a real app, this would be stored in a database)
     st.session_state.users_db = {
-        "admin@gamil.com": {
+        "admin@gmail.com": {
             "password": hashlib.sha256("admin123".encode()).hexdigest(),
             "name": "Admin User",
             "role": "admin"
@@ -611,7 +611,7 @@ else:
                         )
                         time.sleep(1)
 
-                    command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-dev" --metadata "{vector_id}"'
+                    command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{vector_id}"'
 
                     try:
                         # Execute the command
