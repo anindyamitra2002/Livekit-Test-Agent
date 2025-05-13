@@ -17,7 +17,7 @@ load_dotenv()
 
 # Set page config first thing
 st.set_page_config(
-    page_title="Vedantu Counselling Agent",
+    page_title="Livekit Telephonic Agent",
     page_icon="📞",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -64,12 +64,12 @@ if 'user' not in st.session_state:
 if 'users_db' not in st.session_state:
     # Initialize with a default admin user (in a real app, this would be stored in a database)
     st.session_state.users_db = {
-        "admin@vedantu.com": {
+        "admin@gamil.com": {
             "password": hashlib.sha256("admin123".encode()).hexdigest(),
             "name": "Admin User",
             "role": "admin"
         },
-        "user@vedantu.com": {
+        "user@gmail.com": {
             "password": hashlib.sha256("user123".encode()).hexdigest(),
             "name": "Demo User",
             "role": "user"
@@ -102,7 +102,7 @@ if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        st.title("Vedantu Counselling Agent")
+        st.title("Livekit Telephonic Agent")
         st.markdown("Please log in to access the application")
         
         # Login form
@@ -322,7 +322,7 @@ else:
     # Top navigation bar with user info and logout
     nav_col1, nav_col2 = st.columns([6, 1])
     with nav_col1:
-        st.title("📞 Vedantu Counselling Agent")
+        st.title("📞 Livekit Telephonic Agent")
     with nav_col2:
         st.markdown(f"""
         <div style="text-align: center; margin-bottom: 3px;">
@@ -633,4 +633,4 @@ else:
 
     # Add footer
     st.markdown("---")
-    st.markdown(f"<div style='text-align: center; color: gray;'>Vedantu Counselling Agent System • v1.0.0 • Logged in as {st.session_state.user['name']}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align: center; color: gray;'>Livekit Telephonic Agent System • v1.0.0 • Logged in as {st.session_state.user['name']}</div>", unsafe_allow_html=True)
