@@ -6,7 +6,7 @@ from pinecone import Pinecone, ServerlessSpec
 import tempfile
 from dotenv import load_dotenv
 import random
-
+import time
 # Load environment variables
 load_dotenv()
 
@@ -149,16 +149,14 @@ if st.button("Call"):
                 vector_id = f"call-{phone_number}-{random.randint(100000, 999999)}"
 
                 # Upsert metadata to Pinecone
-                index.upsert(
-                    vectors=[
-                        {
-                            "id": vector_id,
-                            "values": DUMMY_VECTOR,
-                            "metadata": metadata
-                        }
-                    ],
-                    namespace=""
-                )
+                with st.spinner("Sending call metadata..."):
+                    index.upsert(
+                        vectors=[
+                            {"id": vector_id, "values": DUMMY_VECTOR, "metadata": metadata}
+                        ],
+                        namespace=""
+                    )
+                    time.sleep(2)
 
                 command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{vector_id}"'
 
