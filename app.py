@@ -118,17 +118,17 @@ if not st.session_state.authenticated:
                 else:
                     st.error("Invalid email or password")
         
-        # Demo credentials
-        with st.expander("Demo Credentials"):
-            st.markdown("""
-            **Admin User**
-            - Email: admin@vedantu.com
-            - Password: admin123
+        # # Demo credentials
+        # with st.expander("Demo Credentials"):
+        #     st.markdown("""
+        #     **Admin User**
+        #     - Email: admin@vedantu.com
+        #     - Password: admin123
             
-            **Regular User**
-            - Email: user@vedantu.com
-            - Password: user123
-            """)
+        #     **Regular User**
+        #     - Email: user@vedantu.com
+        #     - Password: user123
+        #     """)
 
 # If authenticated, show the main application
 else:
