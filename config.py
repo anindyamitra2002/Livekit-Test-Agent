@@ -117,14 +117,14 @@ CONFIG = {
                 "sarvam:Neel",
                 "sarvam:Vian",
                 
+                "elevenlabs:en-Brittney",
                 "elevenlabs:hi-Monika-Sogam",
-                "elevenlabs:ta-Meera",
-                "elevenlabs:en-Brittney"
+                "elevenlabs:ta-Meera"
             ]
         },
         "language": {
             "type": "object",
-            "azure": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN"],
+            "azure": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN", "pa-IN"],
             "sarvam": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN", "pa-IN"],
             "elevenlabs": ["en-IN", "hi-IN", "ta-IN"]
         }
