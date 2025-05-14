@@ -177,7 +177,21 @@ else:
         'ta-IN': 'Tamil',
         'te-IN': 'Telugu'
     }
-    
+    # Set default session state values if they don't exist yet
+    if "tts_provider" not in st.session_state:
+        st.session_state.tts_provider = CONFIG["TTS"]["provider"]["enum"][0]  # Default to first provider
+
+    if "tts_provider_select" not in st.session_state:
+        st.session_state.tts_provider_select = st.session_state.tts_provider
+
+    if "tts_language_select" not in st.session_state:
+        default_langs = CONFIG["TTS"]["language"][st.session_state.tts_provider]
+        st.session_state.tts_language_select = default_langs[0] if default_langs else ""
+
+    if "tts_voice_select" not in st.session_state:
+        default_voices = PROVIDER_MODEL_MAPPING["TTS"][st.session_state.tts_provider]
+        st.session_state.tts_voice_select = default_voices[0] if default_voices else ""
+
     def extract_lang_from_voice(voice: str, provider: str) -> str:
         # azure: "azure:hi-IN-AaravNeural" → "hi-IN"
         # elevenlabs: "elevenlabs:hi-Monika-Sogam" → "hi-IN"
@@ -547,7 +561,7 @@ else:
                         )
                         time.sleep(1)
 
-                    command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-testing" --metadata "{vector_id}"'
+                    command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{vector_id}"'
 
                     try:
                         # Execute the command
