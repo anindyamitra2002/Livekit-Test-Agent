@@ -7,10 +7,8 @@ import tempfile
 from dotenv import load_dotenv
 import random
 import time
-import json
-import pandas as pd
 import hashlib
-from datetime import datetime
+from config import CONFIG
 
 # Load environment variables
 load_dotenv()
@@ -32,6 +30,9 @@ st.markdown("""
         }
         div[data-testid="stVerticalBlock"] {
             gap: 0.5rem;
+        }
+        div[data-testid="stHorizontalBlock"] {
+            margin: 1rem;
         }
         div.stButton > button {
             width: 100%;
@@ -117,18 +118,6 @@ if not st.session_state.authenticated:
                     st.rerun()
                 else:
                     st.error("Invalid email or password")
-        
-        # # Demo credentials
-        # with st.expander("Demo Credentials"):
-        #     st.markdown("""
-        #     **Admin User**
-        #     - Email: admin@vedantu.com
-        #     - Password: admin123
-            
-        #     **Regular User**
-        #     - Email: user@vedantu.com
-        #     - Password: user123
-        #     """)
 
 # If authenticated, show the main application
 else:
@@ -152,134 +141,14 @@ else:
     index = pc.Index(INDEX_NAME)
 
     # Initialize Pinecone Assistant
-    assistant = pc.assistant.Assistant(assistant_name="vedantu-rag")
-
-    # Component configurations
-    CONFIG = {
-        "STT": {
-            "provider": {
-                "type": "string",
-                "enum": ["azure", "sarvam"]
-            },
-            "model": {
-                "type": "string",
-                "enum": [
-                    "azure:default",
-                    "sarvam:saarika:v2",
-                    "sarvam:saaras:v2",
-                ]
-            },
-            "language": {
-                "type": "string",
-                "enum": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN"]
-            }
-        },
-        "LLM": {
-            "provider": {
-                "type": "string",
-                "enum": ["openai",]
-            },
-            "model": {
-                "type": "string",
-                "enum": [
-                    "openai:gpt-4o",
-                    "openai:gpt-4o-mini",
-                    "openai:gpt-4.1",
-                    "openai:gpt-4.1-mini",
-                    "openai:gpt-4.1-nano",
-                ]
-            },
-            "system_prompt": {
-                "type": "string",
-                "description": "The initial system or assistant prompt to steer the model"
-            },
-            "temperature": {
-                "type": "number",
-                "minimum": 0.0,
-                "maximum": 1.0,
-                "description": "Controls randomness: 0.0 = deterministic, 1.0 = maximum randomness"
-            }
-        },
-        "TTS": {
-            "provider": {
-                "type": "string",
-                "enum": ["azure", "sarvam"]
-            },
-            "voice": {
-                "type": "string",
-                "enum": [
-                    "azure:hi-IN-AaravNeural",
-                    "azure:hi-IN-AnanyaNeural",
-                    "azure:hi-IN-AartiNeural",
-                    "azure:hi-IN-ArjunNeural",
-                    "azure:hi-IN-KavyaNeural",
-                    "azure:hi-IN-KunalNeural",
-                    "azure:hi-IN-RehaanNeural",
-                    "azure:hi-IN-SwaraNeural",
-                    "azure:hi-IN-MadhurNeural",
-
-                    "azure:mr-IN-AarohiNeural",
-                    "azure:mr-IN-ManoharNeural",
-
-                    "azure:en-IN-AaravNeural",
-                    "azure:en-IN-AashiNeural",
-                    "azure:en-IN-AartiNeural",
-                    "azure:en-IN-ArjunNeural",
-                    "azure:en-IN-AnanyaNeural",
-                    "azure:en-IN-KavyaNeural",
-                    "azure:en-IN-KunalNeural",
-                    "azure:en-IN-NeerjaNeural",
-                    "azure:en-IN-PrabhatNeural",
-                    "azure:en-IN-RehaanNeural",
-
-                    "azure:ta-IN-PallaviNeural",
-                    "azure:ta-IN-ValluvarNeural",
-
-                    "azure:bn-IN-TanishaaNeural",
-                    "azure:bn-IN-BashkarNeural",
-
-                    "azure:gu-IN-DhwaniNeural",
-                    "azure:gu-IN-NiranjanNeural",
-
-                    "azure:te-IN-ShrutiNeural",
-                    "azure:te-IN-MohanNeural",
-
-                    "azure:ml-IN-SobhanaNeural",
-                    "azure:ml-IN-MidhunNeural",
-
-                    "azure:kn-IN-SapnaNeural",
-                    "azure:kn-IN-GaganNeural",
-
-                    "azure:or-IN-SubhasiniNeural",
-                    "azure:or-IN-SukantNeural",
-
-                    "sarvam:Diya",
-                    "sarvam:Maya",
-                    "sarvam:Meera",
-                    "sarvam:Pavithra",
-                    "sarvam:Maitreyi",
-                    "sarvam:Misha",
-                    "sarvam:Amol",
-                    "sarvam:Arjun",
-                    "sarvam:Amartya",
-                    "sarvam:Arvind",
-                    "sarvam:Neel",
-                    "sarvam:Vian"
-                    ]
-
-            },
-            "language": {
-                "type": "string",
-                "enum": ["hi-IN", "mr-IN", "en-US", "ta-IN", "bn-IN", "gu-IN"]
-            },
-        }
-    }
+    assistant = pc.assistant.Assistant(assistant_name="test-rag")
 
     # Create provider-dependent model mappings
     PROVIDER_MODEL_MAPPING = {
         "STT": {
             "azure": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("azure:")],
-            "sarvam": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("sarvam:")]
+            "sarvam": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("sarvam:")],
+            "deepgram": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("deepgram:")]
         },
         "LLM": {
             "openai": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("openai:")],
@@ -288,7 +157,8 @@ else:
         },
         "TTS": {
             "azure": [voice for voice in CONFIG["TTS"]["voice"]["enum"] if voice.startswith("azure:")],
-            "sarvam": [voice for voice in CONFIG["TTS"]["voice"]["enum"] if voice.startswith("sarvam:")]
+            "sarvam": [voice for voice in CONFIG["TTS"]["voice"]["enum"] if voice.startswith("sarvam:")],
+            "elevenlabs": [voice for voice in CONFIG["TTS"]["voice"]["enum"] if voice.startswith("elevenlabs:")]
         }
     }
 
@@ -296,6 +166,7 @@ else:
     LANGUAGE_MAPPING = {
         'bn-IN': 'Bengali',
         'en-IN': 'English',
+        'en-US': 'English (US)',
         'gu-IN': 'Gujarati',
         'hi-IN': 'Hindi',
         'kn-IN': 'Kannada',
@@ -307,6 +178,58 @@ else:
         'te-IN': 'Telugu'
     }
     
+    def extract_lang_from_voice(voice: str, provider: str) -> str:
+        # azure: "azure:hi-IN-AaravNeural" → "hi-IN"
+        # elevenlabs: "elevenlabs:hi-Monika-Sogam" → "hi-IN"
+        _, rest = voice.split(":", 1)
+        prefix = rest.split("-")[0]  # e.g. "hi" or "hi" for both
+        if provider == "azure":
+            # if already includes region (like "hi-IN"), prefix is fine
+            return prefix if "-" in prefix else prefix + "-IN"
+        elif provider == "elevenlabs":
+            # prefix is "hi", "ta", or "en" → normalize to IN region
+            return f"{prefix}-IN"
+        else:
+            return prefix  # sarvam voices handled elsewhere or ignored
+
+    # When provider changes, reset both voice+language
+    def update_tts_provider():
+        st.session_state.tts_provider = st.session_state.tts_provider_select
+        # clear voice + language so callbacks fire fresh
+        for key in ["tts_voice_select", "tts_language_select"]:
+            if key in st.session_state:
+                del st.session_state[key]
+
+    # When language changes, reset voice to first matching
+    def update_tts_language():
+        provider = st.session_state.tts_provider
+        lang = st.session_state.tts_language_select
+        # available voices for this provider
+        voices = PROVIDER_MODEL_MAPPING["TTS"][provider]
+        # build regex for e.g. '^azure:hi-IN-' or '^elevenlabs:hi-'
+        if provider in ("azure", "elevenlabs"):
+            code = lang  # e.g. "hi-IN"
+            short = code.split("-")[0]  # "hi"
+            pattern = re.compile(rf"^{provider}:{short}(-|_)")
+        else:
+            # for sarvam just leave as-is
+            pattern = None
+
+        filtered = [
+            v for v in voices
+            if pattern is None or pattern.search(v)
+        ]
+        # update voice options and reset selection
+        st.session_state.tts_voice_select = filtered[0] if filtered else voices[0]
+
+    # When voice changes, set language
+    def update_tts_voice():
+        provider = st.session_state.tts_provider
+        voice = st.session_state.tts_voice_select
+        if provider in ("azure", "elevenlabs"):
+            lang = extract_lang_from_voice(voice, provider)
+            st.session_state.tts_language_select = lang
+        
     # Function to validate phone number
     def validate_phone_number(phone):
         pattern = r'^\+91\d{10}$'
@@ -408,7 +331,7 @@ else:
         # STT Configuration Section
         st.markdown('<div class="config-section">', unsafe_allow_html=True)
         st.markdown('<h3 class="config-title">Speech-to-Text (STT) Configuration</h3>', unsafe_allow_html=True)
-        st.markdown("Configure speech recognition settings")
+        # st.markdown("Configure speech recognition settings")
         
         # STT Provider selection
         col1, col2, col3 = st.columns([1, 1, 1])
@@ -416,6 +339,9 @@ else:
         with col1:
             def update_stt_provider():
                 st.session_state.stt_provider = st.session_state.stt_provider_select
+                # Reset language selection when provider changes
+                if 'stt_language_select' in st.session_state:
+                    st.session_state.pop('stt_language_select')
                 
             stt_provider = st.selectbox(
                 "Provider",
@@ -436,10 +362,11 @@ else:
             )
             
         with col3:
-            # STT Language selection
+            # STT Language selection based on provider
+            available_stt_languages = CONFIG["STT"]["language"][st.session_state.stt_provider]
             stt_language = st.selectbox(
                 "Language",
-                options=CONFIG["STT"]["language"]["enum"],
+                options=available_stt_languages,
                 format_func=lambda x: LANGUAGE_MAPPING.get(x, x),
                 key="stt_language_select"
             )
@@ -449,7 +376,7 @@ else:
         # LLM Configuration Section
         st.markdown('<div class="config-section">', unsafe_allow_html=True)
         st.markdown('<h3 class="config-title">Language Model (LLM) Configuration</h3>', unsafe_allow_html=True)
-        st.markdown("Configure AI language model settings")
+        # st.markdown("Configure AI language model settings")
         
         # Top row for LLM Provider and Model
         col1, col2, col3 = st.columns([1, 1, 1])
@@ -483,15 +410,15 @@ else:
                 "Temperature",
                 min_value=CONFIG["LLM"]["temperature"]["minimum"],
                 max_value=CONFIG["LLM"]["temperature"]["maximum"],
-                value=0.7,
-                step=0.1,
+                value=0.5,
+                step=0.01,
                 help=CONFIG["LLM"]["temperature"]["description"],
                 key="llm_temperature"
             )
         
         # Second row just for the system prompt (LARGER TEXT AREA)
         # System Prompt - LARGER
-        st.markdown("<p style='margin-top: 20px; margin-bottom: 5px; font-weight: 500;'>System Prompt</p>", unsafe_allow_html=True)
+        st.markdown("<p style='font-weight: 500;'>System Prompt</p>", unsafe_allow_html=True)
         llm_system_prompt = st.text_area(
             "",
             placeholder="Enter instructions for the AI assistant...",
@@ -505,16 +432,13 @@ else:
         # TTS Configuration Section
         st.markdown('<div class="config-section">', unsafe_allow_html=True)
         st.markdown('<h3 class="config-title">Text-to-Speech (TTS) Configuration</h3>', unsafe_allow_html=True)
-        st.markdown("Configure voice synthesis settings")
+        # st.markdown("Configure voice synthesis settings")
         
         # First row for TTS provider, voice and language
+        # layout
         col1, col2, col3 = st.columns([1, 1, 1])
-        
+
         with col1:
-            # TTS Provider selection
-            def update_tts_provider():
-                st.session_state.tts_provider = st.session_state.tts_provider_select
-                
             tts_provider = st.selectbox(
                 "Provider",
                 options=CONFIG["TTS"]["provider"]["enum"],
@@ -522,24 +446,36 @@ else:
                 key="tts_provider_select",
                 on_change=update_tts_provider
             )
-        
+
         with col2:
-            # TTS Voice selection based on provider
-            tts_voice_options = PROVIDER_MODEL_MAPPING["TTS"][st.session_state.tts_provider]
-            tts_voice = st.selectbox(
-                "Voice",
-                options=tts_voice_options,
-                format_func=beautify_name,
-                key="tts_voice_select"
-            )
-        
-        with col3:
-            # TTS Language
+            # Load languages *after* provider is set
+            available_tts_languages = CONFIG["TTS"]["language"][st.session_state.tts_provider]
             tts_language = st.selectbox(
                 "Language",
-                options=CONFIG["TTS"]["language"]["enum"],
+                options=available_tts_languages,
                 format_func=lambda x: LANGUAGE_MAPPING.get(x, x),
-                key="tts_language_select"
+                key="tts_language_select",
+                on_change=update_tts_language
+            )
+
+        with col3:
+            # Load voices *after* provider+language are set
+            all_voices = PROVIDER_MODEL_MAPPING["TTS"][st.session_state.tts_provider]
+            # if azure/elevenlabs, filter to match selected language
+            if st.session_state.tts_provider in ("azure", "elevenlabs"):
+                lang = st.session_state.tts_language_select
+                short = lang.split("-")[0]
+                regex = re.compile(rf"^{st.session_state.tts_provider}:{short}(-|_)")
+                voice_options = [v for v in all_voices if regex.search(v)]
+            else:
+                voice_options = all_voices
+
+            tts_voice = st.selectbox(
+                "Voice",
+                options=voice_options,
+                format_func=beautify_name,
+                key="tts_voice_select",
+                on_change=update_tts_voice
             )
         
         st.markdown('</div>', unsafe_allow_html=True)
@@ -580,7 +516,7 @@ else:
                     'phone_number': phone_number,
                     'first_message': first_message,
                     'STT_provider': st.session_state.stt_provider,
-                    'STT_model': stt_model.split("sarvam:")[-1],
+                    'STT_model': stt_model.split("sarvam:")[-1] if stt_model.startswith("sarvam") else stt_model.split(":")[-1],
                     'STT_language': stt_language,
                     'LLM_provider': st.session_state.llm_provider,
                     'LLM_model': llm_model.split(":")[-1],
@@ -611,7 +547,7 @@ else:
                         )
                         time.sleep(1)
 
-                    command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{vector_id}"'
+                    command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-testing" --metadata "{vector_id}"'
 
                     try:
                         # Execute the command
