@@ -559,7 +559,7 @@ else:
                             ],
                             namespace=""
                         )
-                        time.sleep(1)
+                        time.sleep(3)
 
                     command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{vector_id}"'
 
