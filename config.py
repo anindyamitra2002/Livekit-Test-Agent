@@ -10,7 +10,8 @@ CONFIG = {
             "enum": [
                 "azure:default",
                 "sarvam:saarika:v2",
-                "sarvam:saaras:v2",
+                "sarvam:saarika:v1",
+                "sarvam:saarika:flash",
                 "deepgram:nova-2-general",
                 "deepgram:nova-3-general"
             ]
