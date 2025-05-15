@@ -434,7 +434,7 @@ else:
         # System Prompt - LARGER
         st.markdown("<p style='font-weight: 500;'>System Prompt</p>", unsafe_allow_html=True)
         llm_system_prompt = st.text_area(
-            "",
+            "prompt",
             placeholder="Enter instructions for the AI assistant...",
             height=200,  # Increased height
             help=CONFIG["LLM"]["system_prompt"]["description"],
