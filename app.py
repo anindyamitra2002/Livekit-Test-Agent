@@ -148,17 +148,20 @@ else:
         "STT": {
             "azure": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("azure:")],
             "sarvam": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("sarvam:")],
-            "deepgram": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("deepgram:")]
+            "deepgram": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("deepgram:")],
+            "google": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("google:")],
+            "openai": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("openai:")],
         },
         "LLM": {
             "openai": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("openai:")],
-            "anthropic": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("anthropic:")],
-            "cohere": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("cohere:")]
+            "deepseek": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("deepseek:")],
+            "google": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("google:")]
         },
         "TTS": {
             "azure": [voice for voice in CONFIG["TTS"]["voice"]["enum"] if voice.startswith("azure:")],
             "sarvam": [voice for voice in CONFIG["TTS"]["voice"]["enum"] if voice.startswith("sarvam:")],
-            "elevenlabs": [voice for voice in CONFIG["TTS"]["voice"]["enum"] if voice.startswith("elevenlabs:")]
+            "elevenlabs": [voice for voice in CONFIG["TTS"]["voice"]["enum"] if voice.startswith("elevenlabs:")],
+            "cartesia": [voice for voice in CONFIG["TTS"]["voice"]["enum"] if voice.startswith("cartesia:")],
         }
     }
 
@@ -200,7 +203,7 @@ else:
         if provider == "azure":
             # if already includes region (like "hi-IN"), prefix is fine
             return prefix if "-" in prefix else prefix + "-IN"
-        elif provider == "elevenlabs":
+        elif provider in ["elevenlabs", "cartesia"]:
             # prefix is "hi", "ta", or "en" → normalize to IN region
             return f"{prefix}-IN"
         else:
@@ -221,7 +224,7 @@ else:
         # available voices for this provider
         voices = PROVIDER_MODEL_MAPPING["TTS"][provider]
         # build regex for e.g. '^azure:hi-IN-' or '^elevenlabs:hi-'
-        if provider in ("azure", "elevenlabs"):
+        if provider in ("azure", "elevenlabs", "cartesia"):
             code = lang  # e.g. "hi-IN"
             short = code.split("-")[0]  # "hi"
             pattern = re.compile(rf"^{provider}:{short}(-|_)")
@@ -240,7 +243,7 @@ else:
     def update_tts_voice():
         provider = st.session_state.tts_provider
         voice = st.session_state.tts_voice_select
-        if provider in ("azure", "elevenlabs"):
+        if provider in ("azure", "elevenlabs", "cartesia"):
             lang = extract_lang_from_voice(voice, provider)
             st.session_state.tts_language_select = lang
         
@@ -476,7 +479,7 @@ else:
             # Load voices *after* provider+language are set
             all_voices = PROVIDER_MODEL_MAPPING["TTS"][st.session_state.tts_provider]
             # if azure/elevenlabs, filter to match selected language
-            if st.session_state.tts_provider in ("azure", "elevenlabs"):
+            if st.session_state.tts_provider in ("azure", "elevenlabs", "cartesia"):
                 lang = st.session_state.tts_language_select
                 short = lang.split("-")[0]
                 regex = re.compile(rf"^{st.session_state.tts_provider}:{short}(-|_)")
@@ -561,7 +564,7 @@ else:
                         )
                         time.sleep(3)
 
-                    command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{vector_id}"'
+                    command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-testing" --metadata "{vector_id}"'
 
                     try:
                         # Execute the command

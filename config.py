@@ -3,30 +3,39 @@ CONFIG = {
     "STT": {
         "provider": {
             "type": "string",
-            "enum": ["azure", "sarvam", "deepgram"]
+            "enum": ["azure", "sarvam", "deepgram", "google", "openai"]
         },
         "model": {
             "type": "string",
             "enum": [
                 "azure:default",
+                
                 "sarvam:saarika:v2",
                 "sarvam:saarika:v1",
                 "sarvam:saarika:flash",
+                
                 "deepgram:nova-2-general",
-                "deepgram:nova-3-general"
+                "deepgram:nova-3-general",
+                
+                "google:command_and_search",
+                "google:default",
+                
+                "openai:whisper-1"
             ]
         },
         "language": {
             "type": "object",
             "azure": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN"],
             "sarvam": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN"],
-            "deepgram": ["en-IN", "hi-IN"]
+            "deepgram": ["en-IN", "hi-IN"],
+            "google": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN"],
+            "openai": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "kn-IN"],
         }
     },
     "LLM": {
         "provider": {
             "type": "string",
-            "enum": ["openai"]
+            "enum": ["openai", "deepseek", "google"]
         },
         "model": {
             "type": "string",
@@ -35,7 +44,19 @@ CONFIG = {
                 "openai:gpt-4o-mini",
                 "openai:gpt-4.1",
                 "openai:gpt-4.1-mini",
-                "openai:gpt-4.1-nano"
+                "openai:gpt-4.1-nano",
+                
+                "deepseek:deepseek-v3",
+                "deepseek:deepseek-r1",
+                
+                "google:gemini-2.5-flash-preview-04-17",
+                "google:gemini-2.5-pro-preview-05-06",
+                "google:gemini-2.0-flash",
+                "google:gemini-2.0-flash-preview-image-generation",
+                "google:gemini-2.0-flash-lite",
+                "google:gemini-1.5-flash",
+                "google:gemini-1.5-flash-8b",
+                "google:gemini-1.5-pro",
             ]
         },
         "system_prompt": {
@@ -52,7 +73,7 @@ CONFIG = {
     "TTS": {
         "provider": {
             "type": "string",
-            "enum": ["azure", "sarvam", "elevenlabs"]
+            "enum": ["azure", "sarvam", "elevenlabs", "cartesia"]
         },
         "voice": {
             "type": "string",
@@ -120,14 +141,29 @@ CONFIG = {
                 
                 "elevenlabs:en-Brittney",
                 "elevenlabs:hi-Monika-Sogam",
-                "elevenlabs:ta-Meera"
+                "elevenlabs:ta-Meera",
+                
+                "cartesia:en-Carson",
+                "cartesia:en-Ethan",
+                "cartesia:en-David",
+                "cartesia:en-Sophie",
+                "cartesia:en-Savannah",
+                "cartesia:en-Brooke",
+                "cartesia:en-Corinne",
+                "cartesia:hi-Apoorva",
+                "cartesia:hi-Ananya",
+                "cartesia:hi-Mita",
+                "cartesia:hi-Amit",
+                "cartesia:hi-Ishan",
+                "cartesia:hi-Mihir",
             ]
         },
         "language": {
             "type": "object",
             "azure": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN", "pa-IN"],
             "sarvam": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN", "pa-IN"],
-            "elevenlabs": ["en-IN", "hi-IN", "ta-IN"]
+            "elevenlabs": ["en-IN", "hi-IN", "ta-IN"],
+            "cartesia": ["en-IN", "hi-IN"]
         }
     }
 }
