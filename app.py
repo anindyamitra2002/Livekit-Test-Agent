@@ -67,7 +67,7 @@ def beautify_name(name):
     if not name or ":" not in name:
         return name
     provider, model = name.split(":", 1)
-    return f"{model} ({provider.capitalize()})"
+    return f"{model} ({provider.upper() if provider == "iitm" else provider.capitalize()})"
 
 # Format functions with badge-like cost display
 def format_stt_model(name):
@@ -172,6 +172,7 @@ else:
             "deepgram": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("deepgram:")],
             "google": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("google:")],
             "openai": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("openai:")],
+            "iitm": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("iitm:")],
         },
         "LLM": {
             "openai": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("openai:")],
@@ -289,10 +290,8 @@ else:
             else:
                 st.warning("Please select a file to upload.")
         
-        # st.markdown('</div>', unsafe_allow_html=True)
         
         # Uploaded Files List
-        # st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
         st.markdown("#### 📋 Uploaded Files")
         try:
             with st.spinner("Loading files..."):
@@ -356,7 +355,7 @@ else:
     # LLM Tab
     with tab1:
         # First Message Input
-        st.markdown("#### 💬 First Message")
+        st.markdown("##### 💬 First Message")
         first_message = st.text_input(
             "Enter the first message that will be spoken to the user when they pickup the call",
             placeholder="Hello! This is your assistant. How can I help you today?",
@@ -364,7 +363,7 @@ else:
         )
         
         # System Prompt
-        st.markdown("#### 📋 System Prompt")
+        st.markdown("##### 📋 System Prompt")
         llm_system_prompt = st.text_area(
             "Enter instructions for the AI assistant",
             placeholder="You are a helpful assistant...",
@@ -415,7 +414,7 @@ else:
             stt_provider = st.selectbox(
                 "🏢 Provider",
                 options=CONFIG["STT"]["provider"]["enum"],
-                format_func=lambda x: x.capitalize(),
+                format_func=lambda x: x.upper() if x == "iitm" else x.capitalize(),
                 key="stt_provider_select",
                 on_change=update_stt_provider
             )
@@ -511,7 +510,7 @@ else:
                     )
                     time.sleep(3)
                 
-                command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-testing" --metadata "{vector_id}"'
+                command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{vector_id}"'
                 try:
                     with st.spinner("📞 Initiating call..."):
                         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

@@ -3,7 +3,7 @@ CONFIG = {
     "STT": {
         "provider": {
             "type": "string",
-            "enum": ["azure", "sarvam", "deepgram", "google", "openai"]
+            "enum": ["azure", "sarvam", "deepgram", "google", "openai", "iitm"]
         },
         "model": {
             "type": "string",
@@ -20,7 +20,8 @@ CONFIG = {
                 "google:command_and_search",
                 "google:default",
                 
-                "openai:whisper-1"
+                "openai:whisper-1",
+                "iitm:ccc-wav2vec-2.0",
             ]
         },
         "language": {
@@ -30,6 +31,7 @@ CONFIG = {
             "deepgram": ["en-IN", "hi-IN"],
             "google": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN"],
             "openai": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "kn-IN"],
+            "iitm": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN"],
         }
     },
     "LLM": {
@@ -178,7 +180,8 @@ costs_per_min = {
         "deepgram:nova-3-general": 0.00385,   
         "google:default": 0.00800,            
         "google:command_and_search": 0.01200, 
-        "openai:whisper-1": 0.00300           
+        "openai:whisper-1": 0.00300,
+        "iitm:ccc-wav2vec-2.0": 0.000         
     },
     "LLM": {
         "openai:gpt-4o": 0.01550,
