@@ -18,21 +18,22 @@ st.set_page_config(
     page_title="Livekit Telephonic Agent",
     page_icon="📞",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# Remove top padding in the main area
+# Custom CSS for professional styling
 st.markdown("""
     <style>
+        .main-header {
+            background: linear-gradient(90deg, #46d4e5 0%, #4e08c7 100%);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            margin-bottom: 1rem
+        }   
         .block-container {
             padding-top: 4rem;
             padding-bottom: 0rem;
-        }
-        div[data-testid="stVerticalBlock"] {
-            gap: 0.5rem;
-        }
-        div[data-testid="stHorizontalBlock"] {
-            margin: 1rem;
         }
         div.stButton > button {
             width: 100%;
@@ -40,18 +41,26 @@ st.markdown("""
         div[data-testid="stDataFrameResizable"] {
             overflow: auto;
         }
-        .config-section {
-            margin-bottom: 0.5rem;
-        }
         .config-title {
             margin-bottom: 1rem;
             padding-bottom: 0.5rem;
             border-bottom: 1px solid #e0e0e0;
         }
+        .cost-badge {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 700;
+            backdrop-filter: blur(10px);
+        }
+        div[data-testid="stFileUploader"] {
+            padding: 1rem;
+            border-radius: 8px;
+            border: 2px dashed #cbd5e1;
+        }
     </style>
 """, unsafe_allow_html=True)
-
-
 
 # Helper function to beautify names
 def beautify_name(name):
@@ -119,18 +128,25 @@ def logout():
 if not st.session_state.authenticated:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.title("Livekit Telephonic Agent")
-        st.markdown("Please log in to access the application")
-        with st.form("login_form"):
-            username = st.text_input("Email", placeholder="Enter your email")
-            password = st.text_input("Password", type="password", placeholder="Enter your password")
-            login_button = st.form_submit_button("Login")
-            if login_button:
-                if authenticate(username, password):
-                    st.success("Login successful!")
-                    st.rerun()
-                else:
-                    st.error("Invalid email or password")
+        st.markdown("""
+            <div style="text-align: center;">
+                <h2>📞 Livekit Telephonic Agent</h2>
+                <p style="color: #64748b;">Please log in to access the application</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        with st.container():
+            with st.form("login_form"):
+                username = st.text_input("📧 Email", placeholder="Enter your email")
+                password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
+                login_button = st.form_submit_button("🚀 Login", use_container_width=True)
+                
+                if login_button:
+                    if authenticate(username, password):
+                        st.success("✅ Login successful!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Invalid email or password")
 else:
     # Initialize Pinecone
     api_key = os.getenv("PINECONE_API_KEY")
@@ -204,7 +220,7 @@ else:
         default_voices = PROVIDER_MODEL_MAPPING["TTS"][st.session_state.tts_provider]
         st.session_state.tts_voice_select = default_voices[0] if default_voices else ""
 
-    # TTS helper functions (unchanged)
+    # TTS helper functions
     def extract_lang_from_voice(voice: str, provider: str) -> str:
         _, rest = voice.split(":", 1)
         prefix = rest.split("-")[0]
@@ -236,36 +252,27 @@ else:
     def validate_phone_number(phone):
         return bool(re.match(r'^\+91\d{10}$', phone))
 
-    # Total cost calculation
+    # Calculate total cost
     stt_cost = costs_per_min["STT"].get(st.session_state.get('stt_model_select', ''), None)
     llm_cost = costs_per_min["LLM"].get(st.session_state.get('llm_model_select', ''), None)
     tts_cost = costs_per_min["TTS"].get(st.session_state.get('tts_provider', ''), None)
     costs = [stt_cost, llm_cost, tts_cost]
     cost_display = f"${sum(costs):.4f}/min" if all(c is not None for c in costs) else "N/A"
 
-    # Navigation bar
-    nav_col1, nav_col2, nav_col3 = st.columns([4, 1, 1])
-    with nav_col1:
-        st.title("📞 Livekit Telephonic Agent")
-    with nav_col2:
-        st.markdown(f"<div style='text-align: center;'><small>{st.session_state.user['name']} ({st.session_state.user['role']})</small></div>", unsafe_allow_html=True)
-        if st.button("Logout", type="primary"):
-            logout()
-    with nav_col3:
-        st.markdown(f"<div style='text-align: center;'><small>Total Cost: {cost_display}</small></div>", unsafe_allow_html=True)
-
-
-    # Tabs
-    tabs = st.tabs(["Document Upload", "Configuration", "Call Initiation"])
-
-    # Document Upload Tab
-    with tabs[0]:
-        st.header("Document Upload")
-        st.markdown("Upload documents to be used by the counselling agent.")
-        uploaded_file = st.file_uploader("Upload a file", type=["txt", "pdf", "docx", "md"])
-        col1, col2 = st.columns([1, 5])
-        with col1:
-            upload_button = st.button("Upload File")
+    # SIDEBAR - File Upload and User Info
+    with st.sidebar:
+        # st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
+        st.markdown("### 📄 Knowledge Base Management")
+        
+        # File Upload
+        uploaded_file = st.file_uploader(
+            "Upload documents for the agent",
+            type=["txt", "pdf", "docx", "md"],
+            help="Upload documents to be used by the agent"
+        )
+        
+        upload_button = st.button("📤 Upload", use_container_width=True)
+        
         if upload_button:
             if uploaded_file is not None:
                 with tempfile.TemporaryDirectory() as tmpdirname:
@@ -276,88 +283,100 @@ else:
                     try:
                         with st.spinner(f"Uploading {original_filename}..."):
                             response = assistant.upload_file(file_path=file_path)
-                            st.success(f"Uploaded file '{original_filename}' with ID '{response['id']}'")
+                            st.success(f"✅ Uploaded '{original_filename}'")
                     except Exception as e:
-                        st.error(f"Error uploading file: {str(e)}")
+                        st.error(f"❌ Error uploading file: {str(e)}")
             else:
                 st.warning("Please select a file to upload.")
-        st.subheader("Uploaded Files")
+        
+        # st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Uploaded Files List
+        # st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
+        st.markdown("#### 📋 Uploaded Files")
         try:
             with st.spinner("Loading files..."):
                 files = assistant.list_files()
                 if files:
                     for file in files:
-                        col1, col2, col3 = st.columns([3, 1, 1])
-                        with col1:
-                            status_color = "green" if file.status == "complete" else "orange"
-                            st.markdown(f"**{file.name}** - Status: <span style='color:{status_color}'>{file.status}</span>", unsafe_allow_html=True)
-                        with col3:
-                            if st.button("Delete", key=f"delete_{file.id}"):
-                                try:
-                                    with st.spinner(f"Deleting {file.name}..."):
-                                        assistant.delete_file(file.id)
-                                        st.success(f"Deleted file '{file.name}'")
-                                        st.rerun()
-                                except Exception as e:
-                                    st.error(f"Error deleting file: {str(e)}")
+                        with st.container():
+                            col1, col2 = st.columns([2, 1], vertical_alignment="center")
+                            with col1:
+                                status_color = "🟢" if file.status in ["Available"] else "🟡"
+                                st.markdown(f"**{file.name[:10]}** {status_color}")
+                            with col2:
+                                if st.button("Delete", key=f"delete_{file.id}", help="Delete file"):
+                                    try:
+                                        with st.spinner(f"Deleting {file.name}..."):
+                                            assistant.delete_file(file.id)
+                                            st.success(f"Deleted '{file.name}'")
+                                            st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Error deleting file: {str(e)}")
                 else:
-                    st.info("No files uploaded to the assistant yet.")
+                    st.info("No files uploaded yet.")
         except Exception as e:
             st.error(f"Error listing files: {str(e)}")
+        
+        # User Info at Bottom
+        st.markdown(f"**👤 {st.session_state.user['name']}**")
+        if st.button("🚪 Logout", type="primary", use_container_width=True):
+            logout()
 
-    # Configuration Tab
-    with tabs[1]:
-        st.header("Assistant Configuration")
-        if 'stt_provider' not in st.session_state:
-            st.session_state.stt_provider = CONFIG["STT"]["provider"]["enum"][0]
-        if 'llm_provider' not in st.session_state:
-            st.session_state.llm_provider = CONFIG["LLM"]["provider"]["enum"][0]
-        if 'tts_provider' not in st.session_state:
-            st.session_state.tts_provider = CONFIG["TTS"]["provider"]["enum"][0]
+    # MAIN CONTENT
+    # Header
+    st.markdown("""
+        <div class="main-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h1>📞 Livekit Telephonic Agent</h1>
+                <div class="cost-badge">
+                    💰 Total Cost: {cost_display}
+                </div>
+            </div>
+        </div>
+    """.format(cost_display=cost_display), unsafe_allow_html=True)
 
-        # STT Configuration
-        st.markdown('<div class="config-section">', unsafe_allow_html=True)
-        st.markdown('<h3 class="config-title">Speech-to-Text (STT) Configuration</h3>', unsafe_allow_html=True)
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col1:
-            def update_stt_provider():
-                st.session_state.stt_provider = st.session_state.stt_provider_select
-                if 'stt_language_select' in st.session_state:
-                    st.session_state.pop('stt_language_select')
-            stt_provider = st.selectbox(
-                "Provider",
-                options=CONFIG["STT"]["provider"]["enum"],
-                format_func=lambda x: x.capitalize(),
-                key="stt_provider_select",
-                on_change=update_stt_provider
-            )
-        with col2:
-            stt_model_options = PROVIDER_MODEL_MAPPING["STT"][st.session_state.stt_provider]
-            stt_model = st.selectbox(
-                "Model",
-                options=stt_model_options,
-                format_func=format_stt_model,  # Updated to show cost
-                key="stt_model_select"
-            )
-        with col3:
-            available_stt_languages = CONFIG["STT"]["language"][st.session_state.stt_provider]
-            stt_language = st.selectbox(
-                "Language",
-                options=available_stt_languages,
-                format_func=lambda x: LANGUAGE_MAPPING.get(x, x),
-                key="stt_language_select"
-            )
-        st.markdown('</div>', unsafe_allow_html=True)
+    # Phone Number Input and Call Initiation
+    # st.markdown("### 📱 Call Initiation")
+    
+    col1, col2 = st.columns([3, 1], vertical_alignment="bottom")
+    with col1:
+        phone_number = st.text_input(
+            "Reciever Phone Number",
+            placeholder="+91XXXXXXXXXX",
+        )
+    with col2:
+        initiate_call = st.button("📞 Initiate Call", type="primary", use_container_width=True)
+    
 
-        # LLM Configuration
-        st.markdown('<div class="config-section">', unsafe_allow_html=True)
-        st.markdown('<h3 class="config-title">Language Model (LLM) Configuration</h3>', unsafe_allow_html=True)
+    # Configuration Tabs
+    tab1, tab2, tab3 = st.tabs(["🤖 LLM Configuration", "🎤 STT Configuration", "🔊 TTS Configuration"])
+
+    # LLM Tab
+    with tab1:
+        # First Message Input
+        st.markdown("#### 💬 First Message")
+        first_message = st.text_input(
+            "Enter the first message that will be spoken to the user when they pickup the call",
+            placeholder="Hello! This is your assistant. How can I help you today?",
+            key="first_message"
+        )
+        
+        # System Prompt
+        st.markdown("#### 📋 System Prompt")
+        llm_system_prompt = st.text_area(
+            "Enter instructions for the AI assistant",
+            placeholder="You are a helpful assistant...",
+            height=200,
+            help=CONFIG["LLM"]["system_prompt"]["description"],
+            key="llm_system_prompt"
+        )
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             def update_llm_provider():
                 st.session_state.llm_provider = st.session_state.llm_provider_select
             llm_provider = st.selectbox(
-                "Provider",
+                "🏢 Provider",
                 options=CONFIG["LLM"]["provider"]["enum"],
                 format_func=lambda x: x.capitalize(),
                 key="llm_provider_select",
@@ -366,14 +385,14 @@ else:
         with col2:
             llm_model_options = PROVIDER_MODEL_MAPPING["LLM"][st.session_state.llm_provider]
             llm_model = st.selectbox(
-                "Model",
+                "🧠 Model",
                 options=llm_model_options,
-                format_func=format_llm_model,  # Updated to show cost
+                format_func=format_llm_model,
                 key="llm_model_select"
             )
         with col3:
             llm_temperature = st.slider(
-                "Temperature",
+                "🌡️ Temperature",
                 min_value=CONFIG["LLM"]["temperature"]["minimum"],
                 max_value=CONFIG["LLM"]["temperature"]["maximum"],
                 value=0.5,
@@ -381,23 +400,49 @@ else:
                 help=CONFIG["LLM"]["temperature"]["description"],
                 key="llm_temperature"
             )
-        st.markdown("<p style='font-weight: 500;'>System Prompt</p>", unsafe_allow_html=True)
-        llm_system_prompt = st.text_area(
-            "prompt",
-            placeholder="Enter instructions for the AI assistant...",
-            height=200,
-            help=CONFIG["LLM"]["system_prompt"]["description"],
-            key="llm_system_prompt"
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
+    
 
-        # TTS Configuration
-        st.markdown('<div class="config-section">', unsafe_allow_html=True)
-        st.markdown('<h3 class="config-title">Text-to-Speech (TTS) Configuration</h3>', unsafe_allow_html=True)
+    # STT Tab
+    with tab2:
+        
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            def update_stt_provider():
+                st.session_state.stt_provider = st.session_state.stt_provider_select
+                if 'stt_language_select' in st.session_state:
+                    st.session_state.pop('stt_language_select')
+            stt_provider = st.selectbox(
+                "🏢 Provider",
+                options=CONFIG["STT"]["provider"]["enum"],
+                format_func=lambda x: x.capitalize(),
+                key="stt_provider_select",
+                on_change=update_stt_provider
+            )
+        with col2:
+            stt_model_options = PROVIDER_MODEL_MAPPING["STT"][st.session_state.stt_provider]
+            stt_model = st.selectbox(
+                "🎯 Model",
+                options=stt_model_options,
+                format_func=format_stt_model,
+                key="stt_model_select"
+            )
+        with col3:
+            available_stt_languages = CONFIG["STT"]["language"][st.session_state.stt_provider]
+            stt_language = st.selectbox(
+                "🌐 Language",
+                options=available_stt_languages,
+                format_func=lambda x: LANGUAGE_MAPPING.get(x, x),
+                key="stt_language_select"
+            )
+
+
+    # TTS Tab
+    with tab3:
+        
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             tts_provider = st.selectbox(
-                "Provider",
+                "🏢 Provider",
                 options=CONFIG["TTS"]["provider"]["enum"],
                 format_func=lambda x: x.capitalize(),
                 key="tts_provider_select",
@@ -406,7 +451,7 @@ else:
         with col2:
             available_tts_languages = CONFIG["TTS"]["language"][st.session_state.tts_provider]
             tts_language = st.selectbox(
-                "Language",
+                "🌐 Language",
                 options=available_tts_languages,
                 format_func=lambda x: LANGUAGE_MAPPING.get(x, x),
                 key="tts_language_select",
@@ -422,78 +467,71 @@ else:
             else:
                 voice_options = all_voices
             tts_voice = st.selectbox(
-                "Voice",
+                "🎵 Voice",
                 options=voice_options,
                 format_func=format_tts_voice,
                 key="tts_voice_select",
                 on_change=update_tts_voice
             )
-        st.markdown('</div>', unsafe_allow_html=True)
 
-    # Call Initiation Tab
-    with tabs[2]:
-        st.header("Call Initiation")
-        st.markdown("Enter the details to initiate a counselling call")
-        with st.form("call_form"):
-            phone_number = st.text_input(
-                "Phone Number",
-                placeholder="+91XXXXXXXXXX",
-                help="Enter a valid Indian phone number starting with +91 followed by 10 digits"
-            )
-            first_message = st.text_area(
-                "First Message",
-                placeholder="Enter the first message that will be spoken to the user when they answer the call",
-                height=100
-            )
-            submit_button = st.form_submit_button("Initiate Call")
-        if submit_button:
-            if not phone_number or not first_message:
-                st.error("Please fill all required fields")
-            elif not validate_phone_number(phone_number):
-                st.error("Invalid phone number format. Please enter a valid Indian phone number starting with +91 followed by 10 digits.")
-            else:
+    # Handle Call Initiation
+    if initiate_call:
+        if not phone_number or not st.session_state.get('first_message'):
+            st.error("❌ Please fill in the phone number and first message")
+        elif not validate_phone_number(phone_number):
+            st.error("❌ Invalid phone number format. Please enter a valid Indian phone number starting with +91 followed by 10 digits.")
+        else:
+            try:
+                metadata = {
+                    'phone_number': phone_number,
+                    'first_message': st.session_state.get('first_message'),
+                    'STT_provider': st.session_state.stt_provider,
+                    'STT_model': stt_model.split("sarvam:")[-1] if stt_model.startswith("sarvam") else stt_model.split(":")[-1],
+                    'STT_language': stt_language,
+                    'LLM_provider': st.session_state.llm_provider,
+                    'LLM_model': llm_model.split(":")[-1],
+                    'LLM_system_prompt': st.session_state.get('llm_system_prompt', ''),
+                    'LLM_temperature': llm_temperature,
+                    'TTS_provider': st.session_state.tts_provider,
+                    'TTS_voice': tts_voice.split(":")[-1],
+                    'TTS_language': tts_language,
+                }
+                vector_id = f"call-{phone_number}-{int(time.time())}-{random.randint(100000, 999999)}"
+                
+                st.success("✅ Call configured successfully!")
+                
+                with st.expander("📊 Review Configuration"):
+                    st.json(metadata)
+                
+                with st.spinner("📤 Sending call metadata..."):
+                    index.upsert(
+                        vectors=[{"id": vector_id, "values": DUMMY_VECTOR, "metadata": metadata}],
+                        namespace=""
+                    )
+                    time.sleep(3)
+                
+                command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-testing" --metadata "{vector_id}"'
                 try:
-                    metadata = {
-                        'phone_number': phone_number,
-                        'first_message': first_message,
-                        'STT_provider': st.session_state.stt_provider,
-                        'STT_model': stt_model.split("sarvam:")[-1] if stt_model.startswith("sarvam") else stt_model.split(":")[-1],
-                        'STT_language': stt_language,
-                        'LLM_provider': st.session_state.llm_provider,
-                        'LLM_model': llm_model.split(":")[-1],
-                        'LLM_system_prompt': llm_system_prompt,
-                        'LLM_temperature': llm_temperature,
-                        'TTS_provider': st.session_state.tts_provider,
-                        'TTS_voice': tts_voice.split(":")[-1],
-                        'TTS_language': tts_language,
-                    }
-                    vector_id = f"call-{phone_number}-{int(time.time())}-{random.randint(100000, 999999)}"
-                    st.success("Call configured successfully!")
-                    with st.expander("Review Configuration"):
-                        st.json(metadata)
-                    with st.spinner("Sending call metadata..."):
-                        index.upsert(
-                            vectors=[{"id": vector_id, "values": DUMMY_VECTOR, "metadata": metadata}],
-                            namespace=""
-                        )
-                        time.sleep(3)
-                    command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-testing" --metadata "{vector_id}"'
-                    try:
-                        with st.spinner("Initiating call..."):
-                            process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                            stdout, stderr = process.communicate()
-                            if process.returncode == 0:
-                                st.success("Call initiated successfully!")
-                                st.text("Command output:")
+                    with st.spinner("📞 Initiating call..."):
+                        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        stdout, stderr = process.communicate()
+                        if process.returncode == 0:
+                            st.success("🎉 Call initiated successfully!")
+                            with st.expander("📋 Command output"):
                                 st.code(stdout.decode())
-                            else:
-                                st.error("Error initiating call:")
-                                st.code(stderr.decode())
-                    except Exception as e:
-                        st.error(f"An error occurred while executing command: {str(e)}")
+                        else:
+                            st.error("❌ Error initiating call:")
+                            st.code(stderr.decode())
                 except Exception as e:
-                    st.error(f"An error occurred: {str(e)}")
+                    st.error(f"❌ An error occurred while executing command: {str(e)}")
+            except Exception as e:
+                st.error(f"❌ An error occurred: {str(e)}")
 
     # Footer
     st.markdown("---")
-    st.markdown(f"<div style='text-align: center; color: gray;'>Livekit Telephonic Agent System • v1.0.0 • Logged in as {st.session_state.user['name']}</div>", unsafe_allow_html=True)
+    st.markdown("""
+        <div style='text-align: center; color: #64748b; padding: 1rem 0;'>
+            <strong>Livekit Telephonic Agent System</strong> • v1.0.0 • 
+            Powered by 💜 Sample Set
+        </div>
+    """, unsafe_allow_html=True)
