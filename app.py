@@ -303,7 +303,8 @@ else:
                             col1, col2 = st.columns([2, 1], vertical_alignment="center")
                             with col1:
                                 status_color = "🟢" if file.status in ["Available"] else "🟡"
-                                st.markdown(f"**{file.name[:10]}** {status_color}")
+                                st.markdown(f"{status_color} **{file.name if len(file.name) <= 10 else file.name[:8] + '...'}**"
+)
                             with col2:
                                 if st.button("Delete", key=f"delete_{file.id}", help="Delete file"):
                                     try:
