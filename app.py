@@ -67,7 +67,7 @@ def beautify_name(name):
     if not name or ":" not in name:
         return name
     provider, model = name.split(":", 1)
-    return f"{model} ({provider.upper() if provider == "iitm" else provider.capitalize()})"
+    return f"{model} ({provider.upper() if provider == 'iitm' else provider.capitalize()})"
 
 # Format functions with badge-like cost display
 def format_stt_model(name):
