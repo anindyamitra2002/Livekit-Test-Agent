@@ -173,17 +173,21 @@ else:
             "google": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("google:")],
             "openai": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("openai:")],
             "iitm": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("iitm:")],
+            "groq": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("groq:")],
         },
         "LLM": {
             "openai": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("openai:")],
             "deepseek": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("deepseek:")],
-            "google": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("google:")]
+            "google": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("google:")],
+            "groq": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("groq:")],
+            "togetherai": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("togetherai:")],
         },
         "TTS": {
             "azure": [voice for voice in CONFIG["TTS"]["voice"]["enum"] if voice.startswith("azure:")],
             "sarvam": [voice for voice in CONFIG["TTS"]["voice"]["enum"] if voice.startswith("sarvam:")],
             "elevenlabs": [voice for voice in CONFIG["TTS"]["voice"]["enum"] if voice.startswith("elevenlabs:")],
             "cartesia": [voice for voice in CONFIG["TTS"]["voice"]["enum"] if voice.startswith("cartesia:")],
+            "groq": [voice for voice in CONFIG["TTS"]["voice"]["enum"] if voice.startswith("groq:")],
         }
     }
 
