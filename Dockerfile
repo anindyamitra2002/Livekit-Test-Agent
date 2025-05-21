@@ -26,6 +26,6 @@ COPY --chown=user . /app
 # Set environment variables
 ENV STREAMLIT_SERVER_PORT=7860
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
-
+EXPOSE 7860
 # Command to run the application
 CMD ["streamlit", "run", "app.py", "--server.port", "7860"] 

@@ -415,6 +415,7 @@ else:
                 st.session_state.stt_provider = st.session_state.stt_provider_select
                 if 'stt_language_select' in st.session_state:
                     st.session_state.pop('stt_language_select')
+                    
             stt_provider = st.selectbox(
                 "🏢 Provider",
                 options=CONFIG["STT"]["provider"]["enum"],
