@@ -67,7 +67,7 @@ def beautify_name(name):
     if not name or ":" not in name:
         return name
     provider, model = name.split(":", 1)
-    return f"{model} ({provider.upper() if provider == 'iitm' else provider.capitalize()})"
+    return f"{model} ({provider.upper() + '(Experimental)' if provider == 'iitm' else provider.capitalize()})"
 
 # Format functions with badge-like cost display
 def format_stt_model(name):
@@ -170,16 +170,16 @@ else:
             "azure": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("azure:")],
             "sarvam": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("sarvam:")],
             "deepgram": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("deepgram:")],
-            "google": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("google:")],
+            # "google": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("google:")],
             "openai": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("openai:")],
             "iitm": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("iitm:")],
             "groq": [model for model in CONFIG["STT"]["model"]["enum"] if model.startswith("groq:")],
         },
         "LLM": {
             "openai": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("openai:")],
-            "deepseek": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("deepseek:")],
-            "google": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("google:")],
-            "groq": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("groq:")],
+            # "deepseek": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("deepseek:")],
+            # "google": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("google:")],
+            # "groq": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("groq:")],
             "togetherai": [model for model in CONFIG["LLM"]["model"]["enum"] if model.startswith("togetherai:")],
         },
         "TTS": {
@@ -197,6 +197,62 @@ else:
         'hi-IN': 'Hindi', 'kn-IN': 'Kannada', 'ml-IN': 'Malayalam', 'mr-IN': 'Marathi',
         'od-IN': 'Odia', 'pa-IN': 'Punjabi', 'ta-IN': 'Tamil', 'te-IN': 'Telugu'
     }
+
+    def _rerun():
+        # Calculate total cost
+        stt_cost = costs_per_min["STT"].get(st.session_state.stt_model_select, None)
+        llm_cost = costs_per_min["LLM"].get(st.session_state.llm_model_select, None)
+        tts_cost = costs_per_min["TTS"].get(st.session_state.tts_provider, None)
+        print(st.session_state.stt_model_select, st.session_state.llm_model_select, st.session_state.tts_provider)
+        costs = [stt_cost, llm_cost, tts_cost]
+        cost_display = f"${sum(costs):.4f}/min" if all(c is not None for c in costs) else "N/A"
+        st.session_state.cost_display = cost_display
+    
+    
+    def update_llm_provider():
+        st.session_state.llm_provider = st.session_state["llm_provider_select"]
+        # Update model selection based on new provider
+        default_models = PROVIDER_MODEL_MAPPING["LLM"][st.session_state.llm_provider]
+        st.session_state.llm_model_select = default_models[0] if default_models else ""
+        # _rerun()
+                
+    def update_stt_provider():
+        st.session_state.stt_provider = st.session_state["stt_provider_select"]
+        # Update model selection based on new provider
+        default_models = PROVIDER_MODEL_MAPPING["STT"][st.session_state.stt_provider]
+        st.session_state.stt_model_select = default_models[0] if default_models else ""
+        if 'stt_language_select' in st.session_state:
+            st.session_state.pop('stt_language_select')
+        # _rerun()
+
+    def update_tts_provider():
+        st.session_state.tts_provider = st.session_state["tts_provider_select"]
+        # Update voice selection based on new provider
+        default_voices = PROVIDER_MODEL_MAPPING["TTS"][st.session_state.tts_provider]
+        st.session_state.tts_voice_select = default_voices[0] if default_voices else ""
+        # Update language selection based on new provider
+        default_langs = CONFIG["TTS"]["language"][st.session_state.tts_provider]
+        st.session_state.tts_language_select = default_langs[0] if default_langs else ""
+        # _rerun()
+
+    def update_tts_language():
+        provider = st.session_state["tts_provider"]
+        lang = st.session_state["tts_language_select"]
+        voices = PROVIDER_MODEL_MAPPING["TTS"][provider]
+        if provider in ("azure", "elevenlabs", "cartesia"):
+            code = lang
+            short = code.split("-")[0]
+            pattern = re.compile(rf"^{provider}:{short}(-|_)")
+            filtered = [v for v in voices if pattern.search(v)]
+            st.session_state.tts_voice_select = filtered[0] if filtered else voices[0]
+        # _rerun()
+
+    def update_tts_voice():
+        provider = st.session_state["tts_provider"]
+        voice = st.session_state["tts_voice_select"]
+        if provider in ("azure", "elevenlabs", "cartesia"):
+            st.session_state["tts_language_select"] = extract_lang_from_voice(voice, provider)
+        # _rerun()
 
     # Initialize session state
     if "stt_provider" not in st.session_state:
@@ -224,6 +280,10 @@ else:
     if "tts_voice_select" not in st.session_state:
         default_voices = PROVIDER_MODEL_MAPPING["TTS"][st.session_state.tts_provider]
         st.session_state.tts_voice_select = default_voices[0] if default_voices else ""
+    if "cost_display" not in st.session_state:
+        st.session_state.cost_display = "N/A"
+    
+    _rerun()  # Initial cost calculation
 
     # TTS helper functions
     def extract_lang_from_voice(voice: str, provider: str) -> str:
@@ -231,39 +291,8 @@ else:
         prefix = rest.split("-")[0]
         return prefix if provider == "azure" and "-" in prefix else f"{prefix}-IN"
 
-    def update_tts_provider():
-        st.session_state.tts_provider = st.session_state.tts_provider_select
-        for key in ["tts_voice_select", "tts_language_select"]:
-            if key in st.session_state:
-                del st.session_state[key]
-
-    def update_tts_language():
-        provider = st.session_state.tts_provider
-        lang = st.session_state.tts_language_select
-        voices = PROVIDER_MODEL_MAPPING["TTS"][provider]
-        if provider in ("azure", "elevenlabs", "cartesia"):
-            code = lang
-            short = code.split("-")[0]
-            pattern = re.compile(rf"^{provider}:{short}(-|_)")
-            filtered = [v for v in voices if pattern.search(v)]
-            st.session_state.tts_voice_select = filtered[0] if filtered else voices[0]
-
-    def update_tts_voice():
-        provider = st.session_state.tts_provider
-        voice = st.session_state.tts_voice_select
-        if provider in ("azure", "elevenlabs", "cartesia"):
-            st.session_state.tts_language_select = extract_lang_from_voice(voice, provider)
-
     def validate_phone_number(phone):
         return bool(re.match(r'^\+91\d{10}$', phone))
-
-    # Calculate total cost
-    stt_cost = costs_per_min["STT"].get(st.session_state.get('stt_model_select', ''), None)
-    llm_cost = costs_per_min["LLM"].get(st.session_state.get('llm_model_select', ''), None)
-    tts_cost = costs_per_min["TTS"].get(st.session_state.get('tts_provider', ''), None)
-    costs = [stt_cost, llm_cost, tts_cost]
-    cost_display = f"${sum(costs):.4f}/min" if all(c is not None for c in costs) else "N/A"
-
     # SIDEBAR - File Upload and User Info
     with st.sidebar:
         # st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
@@ -338,7 +367,7 @@ else:
                 </div>
             </div>
         </div>
-    """.format(cost_display=cost_display), unsafe_allow_html=True)
+    """.format(cost_display=st.session_state.cost_display), unsafe_allow_html=True)
 
     # Phone Number Input and Call Initiation
     # st.markdown("### 📱 Call Initiation")
@@ -354,7 +383,7 @@ else:
     
 
     # Configuration Tabs
-    tab1, tab2, tab3 = st.tabs(["🤖 LLM Configuration", "🎤 STT Configuration", "🔊 TTS Configuration"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🤖 LLM Configuration", "🎤 STT Configuration", "🔊 TTS Configuration", "⚙️ Additional Settings"])
 
     # LLM Tab
     with tab1:
@@ -377,8 +406,6 @@ else:
         )
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
-            def update_llm_provider():
-                st.session_state.llm_provider = st.session_state.llm_provider_select
             llm_provider = st.selectbox(
                 "🏢 Provider",
                 options=CONFIG["LLM"]["provider"]["enum"],
@@ -392,7 +419,8 @@ else:
                 "🧠 Model",
                 options=llm_model_options,
                 format_func=format_llm_model,
-                key="llm_model_select"
+                key="llm_model_select",
+                on_change=_rerun
             )
         with col3:
             llm_temperature = st.slider(
@@ -411,15 +439,10 @@ else:
         
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
-            def update_stt_provider():
-                st.session_state.stt_provider = st.session_state.stt_provider_select
-                if 'stt_language_select' in st.session_state:
-                    st.session_state.pop('stt_language_select')
-                    
             stt_provider = st.selectbox(
                 "🏢 Provider",
                 options=CONFIG["STT"]["provider"]["enum"],
-                format_func=lambda x: x.upper() if x == "iitm" else x.capitalize(),
+                format_func=lambda x: x.upper() + '(Experimental)' if x == "iitm" else x.capitalize(),
                 key="stt_provider_select",
                 on_change=update_stt_provider
             )
@@ -429,7 +452,8 @@ else:
                 "🎯 Model",
                 options=stt_model_options,
                 format_func=format_stt_model,
-                key="stt_model_select"
+                key="stt_model_select",
+                on_change=_rerun
             )
         with col3:
             available_stt_languages = CONFIG["STT"]["language"][st.session_state.stt_provider]
@@ -479,6 +503,55 @@ else:
                 on_change=update_tts_voice
             )
 
+    # Additional Settings Tab
+    with tab4:
+        st.markdown("##### 🛠️ Agent Configuration")
+        
+        # Create a container for better styling
+        with st.container():
+            # Use columns for better layout
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                use_retrieval = st.checkbox(
+                    "📚 Use Knowledge Base",
+                    value=False,
+                    help="Enable the agent to use uploaded documents for answering questions",
+                    key="use_retrieval"
+                )
+                
+                auto_end_call = st.checkbox(
+                    "⏱️ Auto End Call",
+                    value=False,
+                    help="Automatically end the call after a period of silence",
+                    key="auto_end_call"
+                )
+
+                is_allow_interruptions = st.checkbox(
+                    "🗣️ Allow Interruptions",
+                    value=True,
+                    help="Allow the user to interrupt the agent while it's speaking",
+                    key="is_allow_interruptions"
+                )
+            
+            with col2:
+                background_sound = st.checkbox(
+                    "🎵 Enable Background Sound",
+                    value=True,
+                    help="Add office noise backgroundsound during the call",
+                    key="background_sound"
+                )
+
+                vad_min_silence = st.slider(
+                    "🔇 Minimum Silence Duration (seconds)",
+                    min_value=0.0,
+                    max_value=3.0,
+                    value=0.65,
+                    step=0.01,
+                    help="Minimum duration of silence required to detect end of speech",
+                    key="vad_min_silence"
+                )
+
     # Handle Call Initiation
     if initiate_call:
         if not phone_number or not st.session_state.get('first_message'):
@@ -500,7 +573,14 @@ else:
                     'TTS_provider': st.session_state.tts_provider,
                     'TTS_voice': tts_voice.split(":")[-1],
                     'TTS_language': tts_language,
+                    # Add new configuration options
+                    'use_retrieval': st.session_state.get('use_retrieval', False),
+                    'auto_end_call': st.session_state.get('auto_end_call', False),
+                    'background_sound': st.session_state.get('background_sound', False),
+                    'vad_min_silence': st.session_state.get('vad_min_silence', 0.65),
+                    'is_allow_interruptions': st.session_state.get('is_allow_interruptions', False),
                 }
+                
                 vector_id = f"call-{phone_number}-{int(time.time())}-{random.randint(100000, 999999)}"
                 
                 st.success("✅ Call configured successfully!")
@@ -515,7 +595,7 @@ else:
                     )
                     time.sleep(3)
                 
-                command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-testing" --metadata "{vector_id}"'
+                command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{vector_id}"'
                 try:
                     with st.spinner("📞 Initiating call..."):
                         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
