@@ -587,13 +587,37 @@ else:
                 
                 with st.expander("📊 Review Configuration"):
                     st.json(metadata)
-                
+                    
+                data_verified = False
                 with st.spinner("📤 Sending call metadata..."):
                     index.upsert(
                         vectors=[{"id": vector_id, "values": DUMMY_VECTOR, "metadata": metadata}],
                         namespace=""
                     )
-                    time.sleep(3)
+                    
+                    # Verify data was stored successfully
+                    max_retries = 5
+                    retry_count = 0
+                    
+                    while not data_verified and retry_count < max_retries:
+                        try:
+                            resp = index.fetch(ids=[vector_id], namespace="")
+                            if vector_id in resp.vectors:
+                                fetched_meta = resp.vectors[vector_id].metadata
+                                if fetched_meta == metadata:
+                                    data_verified = True
+                                    break
+                        except Exception as e:
+                            st.warning(f"Attempt {retry_count + 1}: Waiting for data to be available...")
+                        
+                        time.sleep(1)
+                        retry_count += 1
+                    
+                if not data_verified:
+                    st.error("❌ Failed to verify metadata storage. Try Initiate call again.")
+                    st.stop()
+                
+                st.success("✅ Metadata successfully stored and verified!")
                 
                 command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{vector_id}"'
                 try:
