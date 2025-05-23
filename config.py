@@ -11,14 +11,10 @@ CONFIG = {
                 "azure:default",
                 
                 "sarvam:saarika:v2",
-                "sarvam:saarika:v1",
                 "sarvam:saarika:flash",
                 
                 "deepgram:nova-2-general",
                 "deepgram:nova-3-general",
-                
-                # "google:command_and_search",
-                # "google:default",
                 
                 "openai:whisper-1",
                 
@@ -35,7 +31,6 @@ CONFIG = {
             "azure": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN"],
             "sarvam": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN"],
             "deepgram": ["en-IN", "hi-IN"],
-            # "google": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN"],
             "openai": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "kn-IN"],
             "iitm": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN"],
             "groq": ["en-IN"]
@@ -54,19 +49,6 @@ CONFIG = {
                 "openai:gpt-4.1",
                 "openai:gpt-4.1-mini",
                 "openai:gpt-4.1-nano",
-                
-                # "deepseek:deepseek-v3",
-                # "deepseek:deepseek-r1",
-                
-                # "google:gemini-2.5-flash-preview-04-17",
-                # "google:gemini-2.5-pro-preview-05-06",
-                # "google:gemini-2.0-flash",
-                # "google:gemini-2.0-flash-lite",
-                # "google:gemini-1.5-flash",
-                # "google:gemini-1.5-flash-8b",
-                # "google:gemini-1.5-pro",
-                
-                
                 
                 "togetherai:meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
                 "togetherai:meta-llama/Llama-3.3-70B-Instruct-Turbo",
