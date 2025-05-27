@@ -193,8 +193,8 @@ else:
 
     # Language mapping
     LANGUAGE_MAPPING = {
-        'bn-IN': 'Bengali', 'en-IN': 'English', 'en-US': 'English (US)', 'gu-IN': 'Gujarati',
-        'hi-IN': 'Hindi', 'kn-IN': 'Kannada', 'ml-IN': 'Malayalam', 'mr-IN': 'Marathi',
+        'hi-IN': 'Hindi', 'en-IN': 'English', 'gu-IN': 'Gujarati',
+        'bn-IN': 'Bengali', 'kn-IN': 'Kannada', 'ml-IN': 'Malayalam', 'mr-IN': 'Marathi',
         'od-IN': 'Odia', 'pa-IN': 'Punjabi', 'ta-IN': 'Tamil', 'te-IN': 'Telugu'
     }
 
@@ -432,7 +432,6 @@ else:
                                         with st.spinner(f"Deleting {file.name}..."):
                                             assistant.delete_file(file.id)
                                             st.success(f"Deleted '{file.name}'")
-                                            st.rerun()
                                     except Exception as e:
                                         st.error(f"Error deleting file: {str(e)}")
                 else:
