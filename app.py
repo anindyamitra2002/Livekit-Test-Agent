@@ -203,7 +203,7 @@ else:
         stt_cost = costs_per_min["STT"].get(st.session_state.stt_model_select, None)
         llm_cost = costs_per_min["LLM"].get(st.session_state.llm_model_select, None)
         tts_cost = costs_per_min["TTS"].get(st.session_state.tts_provider, None)
-        print(st.session_state.stt_model_select, st.session_state.llm_model_select, st.session_state.tts_provider)
+        # print(st.session_state.stt_model_select, st.session_state.llm_model_select, st.session_state.tts_provider)
         costs = [stt_cost, llm_cost, tts_cost]
         cost_display = f"${sum(costs):.4f}/min" if all(c is not None for c in costs) else "N/A"
         st.session_state.cost_display = cost_display
@@ -661,7 +661,7 @@ else:
                     key="vad_min_silence"
                 )
 
-    def initiate_call_with_retry(phone_number, metadata, max_retries=3):
+    def initiate_call_with_retry(phone_number, metadata, max_retries=5):
         """Handle call initiation with automatic retries for both data verification and call initiation."""
         for attempt in range(max_retries):
             try:
@@ -673,7 +673,7 @@ else:
                     vectors=[{"id": vector_id, "values": DUMMY_VECTOR, "metadata": metadata}],
                     namespace=""
                 )
-                
+                time.sleep(1)  
                 # Verify data was stored successfully
                 data_verified = False
                 verification_retries = 15
