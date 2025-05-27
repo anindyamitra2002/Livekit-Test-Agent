@@ -30,7 +30,7 @@ CONFIG = {
             "type": "object",
             "azure": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN"],
             "sarvam": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN"],
-            "deepgram": ["en-IN", "hi-IN"],
+            "deepgram": ["en-IN"],
             "openai": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "kn-IN"],
             "iitm": ["hi-IN", "mr-IN", "en-IN", "ta-IN", "bn-IN", "gu-IN", "te-IN", "ml-IN", "kn-IN", "od-IN"],
             "groq": ["en-IN"]

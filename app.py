@@ -15,7 +15,7 @@ load_dotenv()
 
 # Set page config first thing
 st.set_page_config(
-    page_title="Livekit Telephonic Agent",
+    page_title="StackVoice Telephonic Agent",
     page_icon="📞",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -130,7 +130,7 @@ if not st.session_state.authenticated:
     with col2:
         st.markdown("""
             <div style="text-align: center;">
-                <h2>📞 Livekit Telephonic Agent</h2>
+                <h2>📞 StackVoice Telephonic Agent</h2>
                 <p style="color: #64748b;">Please log in to access the application</p>
             </div>
         """, unsafe_allow_html=True)
@@ -203,96 +203,185 @@ else:
         stt_cost = costs_per_min["STT"].get(st.session_state.stt_model_select, None)
         llm_cost = costs_per_min["LLM"].get(st.session_state.llm_model_select, None)
         tts_cost = costs_per_min["TTS"].get(st.session_state.tts_provider, None)
-        # print(st.session_state.stt_model_select, st.session_state.llm_model_select, st.session_state.tts_provider)
+        print(st.session_state.stt_model_select, st.session_state.llm_model_select, st.session_state.tts_provider)
         costs = [stt_cost, llm_cost, tts_cost]
         cost_display = f"${sum(costs):.4f}/min" if all(c is not None for c in costs) else "N/A"
         st.session_state.cost_display = cost_display
     
+    def get_models_for_language_provider(component: str, language: str, provider: str) -> list:
+        """Get list of models/voices that support a given language and provider."""
+        if component == "STT":
+            return PROVIDER_MODEL_MAPPING[component][provider]
+        else:  # TTS
+            all_voices = PROVIDER_MODEL_MAPPING[component][provider]
+            if provider in ("azure", "elevenlabs", "cartesia"):
+                short = language.split("-")[0]
+                pattern = re.compile(rf"^{provider}:{short}(-|_)")
+                return [v for v in all_voices if pattern.search(v)]
+            return all_voices
     
     def update_llm_provider():
+        """Update LLM model when provider changes."""
         st.session_state.llm_provider = st.session_state["llm_provider_select"]
         # Update model selection based on new provider
         default_models = PROVIDER_MODEL_MAPPING["LLM"][st.session_state.llm_provider]
         st.session_state.llm_model_select = default_models[0] if default_models else ""
-        # _rerun()
-                
+        _rerun()
+
+    def update_llm_model():
+        """Update price when LLM model changes."""
+        _rerun()
+
     def update_stt_provider():
         st.session_state.stt_provider = st.session_state["stt_provider_select"]
-        # Update model selection based on new provider
-        default_models = PROVIDER_MODEL_MAPPING["STT"][st.session_state.stt_provider]
-        st.session_state.stt_model_select = default_models[0] if default_models else ""
-        if 'stt_language_select' in st.session_state:
-            st.session_state.pop('stt_language_select')
-        # _rerun()
+        # Update model selection based on new provider and language
+        if st.session_state.stt_provider:
+            stt_model_options = get_models_for_language_provider(
+                "STT",
+                st.session_state.stt_language_select,
+                st.session_state.stt_provider
+            )
+            st.session_state.stt_model_select = stt_model_options[0] if stt_model_options else ""
+        _rerun()
 
     def update_tts_provider():
         st.session_state.tts_provider = st.session_state["tts_provider_select"]
-        # Update voice selection based on new provider
-        default_voices = PROVIDER_MODEL_MAPPING["TTS"][st.session_state.tts_provider]
-        st.session_state.tts_voice_select = default_voices[0] if default_voices else ""
-        # Update language selection based on new provider
-        default_langs = CONFIG["TTS"]["language"][st.session_state.tts_provider]
-        st.session_state.tts_language_select = default_langs[0] if default_langs else ""
-        # _rerun()
-
-    def update_tts_language():
-        provider = st.session_state["tts_provider"]
-        lang = st.session_state["tts_language_select"]
-        voices = PROVIDER_MODEL_MAPPING["TTS"][provider]
-        if provider in ("azure", "elevenlabs", "cartesia"):
-            code = lang
-            short = code.split("-")[0]
-            pattern = re.compile(rf"^{provider}:{short}(-|_)")
-            filtered = [v for v in voices if pattern.search(v)]
-            st.session_state.tts_voice_select = filtered[0] if filtered else voices[0]
-        # _rerun()
+        # Update voice selection based on new provider and language
+        if st.session_state.tts_provider:
+            voice_options = get_models_for_language_provider(
+                "TTS",
+                st.session_state.tts_language_select,
+                st.session_state.tts_provider
+            )
+            st.session_state.tts_voice_select = voice_options[0] if voice_options else ""
+        _rerun()
 
     def update_tts_voice():
         provider = st.session_state["tts_provider"]
         voice = st.session_state["tts_voice_select"]
         if provider in ("azure", "elevenlabs", "cartesia"):
             st.session_state["tts_language_select"] = extract_lang_from_voice(voice, provider)
-        # _rerun()
+        _rerun()
+
+    def extract_lang_from_voice(voice: str, provider: str) -> str:
+        try:
+            if not voice or ":" not in voice:
+                return st.session_state.tts_language_select
+            _, rest = voice.split(":", 1)
+            prefix = rest.split("-")[0]
+            return prefix if provider == "azure" and "-" in prefix else f"{prefix}-IN"
+        except Exception:
+            return st.session_state.tts_language_select
+
+    # Initialize session state with default values
+    def initialize_default_values():
+        # STT defaults
+        all_stt_languages = set()
+        for provider in CONFIG["STT"]["provider"]["enum"]:
+            all_stt_languages.update(CONFIG["STT"]["language"][provider])
+        default_stt_lang = sorted(list(all_stt_languages))[0] if all_stt_languages else ""
+        
+        # Get first provider that supports the default language
+        default_stt_provider = next(
+            (p for p in CONFIG["STT"]["provider"]["enum"] 
+             if default_stt_lang in CONFIG["STT"]["language"][p]),
+            CONFIG["STT"]["provider"]["enum"][0]
+        )
+        
+        # Get first model for the default provider
+        default_stt_model = PROVIDER_MODEL_MAPPING["STT"][default_stt_provider][0] if PROVIDER_MODEL_MAPPING["STT"][default_stt_provider] else ""
+
+        # TTS defaults
+        all_tts_languages = set()
+        for provider in CONFIG["TTS"]["provider"]["enum"]:
+            all_tts_languages.update(CONFIG["TTS"]["language"][provider])
+        default_tts_lang = sorted(list(all_tts_languages))[0] if all_tts_languages else ""
+        
+        # Get first provider that supports the default language
+        default_tts_provider = next(
+            (p for p in CONFIG["TTS"]["provider"]["enum"] 
+             if default_tts_lang in CONFIG["TTS"]["language"][p]),
+            CONFIG["TTS"]["provider"]["enum"][0]
+        )
+        
+        # Get first voice for the default provider and language
+        default_tts_voice = get_models_for_language_provider("TTS", default_tts_lang, default_tts_provider)[0] if get_models_for_language_provider("TTS", default_tts_lang, default_tts_provider) else ""
+
+        return {
+            "stt_language_select": default_stt_lang,
+            "stt_provider": default_stt_provider,
+            "stt_provider_select": default_stt_provider,
+            "stt_model_select": default_stt_model,
+            "tts_language_select": default_tts_lang,
+            "tts_provider": default_tts_provider,
+            "tts_provider_select": default_tts_provider,
+            "tts_voice_select": default_tts_voice
+        }
 
     # Initialize session state
     if "stt_provider" not in st.session_state:
-        st.session_state.stt_provider = CONFIG["STT"]["provider"]["enum"][0]
-    if "stt_model_select" not in st.session_state:
-        default_models = PROVIDER_MODEL_MAPPING["STT"][st.session_state.stt_provider]
-        st.session_state.stt_model_select = default_models[0] if default_models else ""
-    if "stt_language_select" not in st.session_state:
-        default_langs = CONFIG["STT"]["language"][st.session_state.stt_provider]
-        st.session_state.stt_language_select = default_langs[0] if default_langs else ""
+        defaults = initialize_default_values()
+        for key, value in defaults.items():
+            st.session_state[key] = value
 
     if "llm_provider" not in st.session_state:
         st.session_state.llm_provider = CONFIG["LLM"]["provider"]["enum"][0]
     if "llm_model_select" not in st.session_state:
         default_models = PROVIDER_MODEL_MAPPING["LLM"][st.session_state.llm_provider]
         st.session_state.llm_model_select = default_models[0] if default_models else ""
-
-    if "tts_provider" not in st.session_state:
-        st.session_state.tts_provider = CONFIG["TTS"]["provider"]["enum"][0]
-    if "tts_provider_select" not in st.session_state:
-        st.session_state.tts_provider_select = st.session_state.tts_provider
-    if "tts_language_select" not in st.session_state:
-        default_langs = CONFIG["TTS"]["language"][st.session_state.tts_provider]
-        st.session_state.tts_language_select = default_langs[0] if default_langs else ""
-    if "tts_voice_select" not in st.session_state:
-        default_voices = PROVIDER_MODEL_MAPPING["TTS"][st.session_state.tts_provider]
-        st.session_state.tts_voice_select = default_voices[0] if default_voices else ""
     if "cost_display" not in st.session_state:
         st.session_state.cost_display = "N/A"
-    
+
     _rerun()  # Initial cost calculation
-
     # TTS helper functions
-    def extract_lang_from_voice(voice: str, provider: str) -> str:
-        _, rest = voice.split(":", 1)
-        prefix = rest.split("-")[0]
-        return prefix if provider == "azure" and "-" in prefix else f"{prefix}-IN"
-
     def validate_phone_number(phone):
         return bool(re.match(r'^\+91\d{10}$', phone))
+
+    # Helper functions for language-based provider selection
+    def get_providers_for_language(component: str, language: str) -> list:
+        """Get list of providers that support a given language for a component."""
+        providers = []
+        for provider in CONFIG[component]["provider"]["enum"]:
+            if language in CONFIG[component]["language"][provider]:
+                providers.append(provider)
+        return providers
+
+    def update_stt_language():
+        """Update STT provider and model when language changes."""
+        # Get providers that support the new language
+        available_providers = get_providers_for_language("STT", st.session_state.stt_language_select)
+        if available_providers:
+            # Set the first available provider
+            st.session_state.stt_provider = available_providers[0]
+            st.session_state.stt_provider_select = available_providers[0]
+            # Update model selection
+            stt_model_options = get_models_for_language_provider(
+                "STT",
+                st.session_state.stt_language_select,
+                st.session_state.stt_provider
+            )
+            if stt_model_options:
+                st.session_state.stt_model_select = stt_model_options[0]
+        _rerun()
+
+    def update_tts_language():
+        """Update TTS provider and voice when language changes."""
+        # Get providers that support the new language
+        available_providers = get_providers_for_language("TTS", st.session_state.tts_language_select)
+        if available_providers:
+            # Set the first available provider
+            st.session_state.tts_provider = available_providers[0]
+            st.session_state.tts_provider_select = available_providers[0]
+            # Update voice selection
+            voice_options = get_models_for_language_provider(
+                "TTS",
+                st.session_state.tts_language_select,
+                st.session_state.tts_provider
+            )
+            if voice_options:
+                st.session_state.tts_voice_select = voice_options[0]
+        _rerun()
+
     # SIDEBAR - File Upload and User Info
     with st.sidebar:
         # st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
@@ -361,7 +450,7 @@ else:
     st.markdown("""
         <div class="main-header">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h1>📞 Livekit Telephonic Agent</h1>
+                <h1>📞 StackVoice Telephonic Agent</h1>
                 <div class="cost-badge">
                     💰 Total Cost: {cost_display}
                 </div>
@@ -411,6 +500,7 @@ else:
                 options=CONFIG["LLM"]["provider"]["enum"],
                 format_func=lambda x: x.capitalize(),
                 key="llm_provider_select",
+                index=0,
                 on_change=update_llm_provider
             )
         with col2:
@@ -420,7 +510,8 @@ else:
                 options=llm_model_options,
                 format_func=format_llm_model,
                 key="llm_model_select",
-                on_change=_rerun
+                index=0,
+                on_change=update_llm_model
             )
         with col3:
             llm_temperature = st.slider(
@@ -430,78 +521,97 @@ else:
                 value=0.5,
                 step=0.01,
                 help=CONFIG["LLM"]["temperature"]["description"],
-                key="llm_temperature"
+                key="llm_temperature",
+                on_change=_rerun
             )
     
 
     # STT Tab
     with tab2:
-        
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
-            stt_provider = st.selectbox(
-                "🏢 Provider",
-                options=CONFIG["STT"]["provider"]["enum"],
-                format_func=lambda x: x.upper() + '(Experimental)' if x == "iitm" else x.capitalize(),
-                key="stt_provider_select",
-                on_change=update_stt_provider
+            # Get all available languages across all providers
+            all_stt_languages = set()
+            for provider in CONFIG["STT"]["provider"]["enum"]:
+                all_stt_languages.update(CONFIG["STT"]["language"][provider])
+            stt_language = st.selectbox(
+                "🌐 Language",
+                options=sorted(list(all_stt_languages)),
+                format_func=lambda x: LANGUAGE_MAPPING.get(x, x),
+                key="stt_language_select",
+                on_change=lambda: update_stt_language()
             )
         with col2:
-            stt_model_options = PROVIDER_MODEL_MAPPING["STT"][st.session_state.stt_provider]
+            # Get providers that support the selected language
+            available_providers = get_providers_for_language("STT", st.session_state.stt_language_select)
+            stt_provider = st.selectbox(
+                "🏢 Provider",
+                options=available_providers,
+                format_func=lambda x: x.upper() + '(Experimental)' if x == "iitm" else x.capitalize(),
+                key="stt_provider_select",
+                index=0,
+                on_change=update_stt_provider
+            )
+        with col3:
+            stt_model_options = get_models_for_language_provider(
+                "STT", 
+                st.session_state.stt_language_select,
+                st.session_state.stt_provider
+            ) if st.session_state.stt_provider else []
             stt_model = st.selectbox(
                 "🎯 Model",
                 options=stt_model_options,
                 format_func=format_stt_model,
                 key="stt_model_select",
+                index=0,
                 on_change=_rerun
             )
-        with col3:
-            available_stt_languages = CONFIG["STT"]["language"][st.session_state.stt_provider]
-            stt_language = st.selectbox(
-                "🌐 Language",
-                options=available_stt_languages,
-                format_func=lambda x: LANGUAGE_MAPPING.get(x, x),
-                key="stt_language_select"
-            )
-
 
     # TTS Tab
     with tab3:
-        
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
-            tts_provider = st.selectbox(
-                "🏢 Provider",
-                options=CONFIG["TTS"]["provider"]["enum"],
-                format_func=lambda x: x.capitalize(),
-                key="tts_provider_select",
-                on_change=update_tts_provider
-            )
-        with col2:
-            available_tts_languages = CONFIG["TTS"]["language"][st.session_state.tts_provider]
+            # Get all available languages across all providers
+            all_tts_languages = set()
+            for provider in CONFIG["TTS"]["provider"]["enum"]:
+                all_tts_languages.update(CONFIG["TTS"]["language"][provider])
             tts_language = st.selectbox(
                 "🌐 Language",
-                options=available_tts_languages,
+                options=sorted(list(all_tts_languages)),
                 format_func=lambda x: LANGUAGE_MAPPING.get(x, x),
                 key="tts_language_select",
-                on_change=update_tts_language
+                on_change=lambda: update_tts_language()
+            )
+        with col2:
+            # Get providers that support the selected language
+            available_providers = get_providers_for_language("TTS", st.session_state.tts_language_select)
+            tts_provider = st.selectbox(
+                "🏢 Provider",
+                options=available_providers,
+                format_func=lambda x: x.capitalize(),
+                key="tts_provider_select",
+                index=0,
+                on_change=update_tts_provider
             )
         with col3:
-            all_voices = PROVIDER_MODEL_MAPPING["TTS"][st.session_state.tts_provider]
-            if st.session_state.tts_provider in ("azure", "elevenlabs", "cartesia"):
-                lang = st.session_state.tts_language_select
-                short = lang.split("-")[0]
-                regex = re.compile(rf"^{st.session_state.tts_provider}:{short}(-|_)")
-                voice_options = [v for v in all_voices if regex.search(v)]
-            else:
-                voice_options = all_voices
+            voice_options = get_models_for_language_provider(
+                "TTS",
+                st.session_state.tts_language_select,
+                st.session_state.tts_provider
+            ) if st.session_state.tts_provider else []
             tts_voice = st.selectbox(
                 "🎵 Voice",
                 options=voice_options,
                 format_func=format_tts_voice,
                 key="tts_voice_select",
+                index=0,
                 on_change=update_tts_voice
             )
+
+        # Show warning if STT and TTS languages don't match
+        if 'stt_language_select' in st.session_state and 'tts_language_select' in st.session_state:
+            if st.session_state.stt_language_select != st.session_state.tts_language_select:
+                st.warning("⚠️ Warning: STT and TTS languages do not match. This may affect the conversation quality.")
 
     # Additional Settings Tab
     with tab4:
@@ -560,19 +670,31 @@ else:
             st.error("❌ Invalid phone number format. Please enter a valid Indian phone number starting with +91 followed by 10 digits.")
         else:
             try:
+                # Calculate costs
+                stt_cost = costs_per_min["STT"].get(st.session_state.stt_model_select, None)
+                llm_cost = costs_per_min["LLM"].get(st.session_state.llm_model_select, None)
+                tts_cost = costs_per_min["TTS"].get(st.session_state.tts_provider, None)
+                costs = [stt_cost, llm_cost, tts_cost]
+                cost_display = f"${sum(costs):.4f}/min" if all(c is not None for c in costs) else "N/A"
+                st.session_state.cost_display = cost_display
+
                 metadata = {
                     'phone_number': phone_number,
                     'first_message': st.session_state.get('first_message'),
                     'STT_provider': st.session_state.stt_provider,
                     'STT_model': stt_model.split("sarvam:")[-1] if stt_model.startswith("sarvam") else stt_model.split(":")[-1],
                     'STT_language': stt_language,
+                    'STT_cost_per_min': stt_cost,
                     'LLM_provider': st.session_state.llm_provider,
                     'LLM_model': llm_model.split(":")[-1],
                     'LLM_system_prompt': st.session_state.get('llm_system_prompt', ''),
                     'LLM_temperature': llm_temperature,
+                    'LLM_cost_per_min': llm_cost,
                     'TTS_provider': st.session_state.tts_provider,
                     'TTS_voice': tts_voice.split(":")[-1],
                     'TTS_language': tts_language,
+                    'TTS_cost_per_min': tts_cost,
+                    'total_cost_per_min': sum(costs) if all(c is not None for c in costs) else None,
                     # Add new configuration options
                     'use_retrieval': st.session_state.get('use_retrieval', False),
                     'auto_end_call': st.session_state.get('auto_end_call', False),
@@ -596,7 +718,7 @@ else:
                     )
                     
                     # Verify data was stored successfully
-                    max_retries = 5
+                    max_retries = 15
                     retry_count = 0
                     
                     while not data_verified and retry_count < max_retries:
@@ -619,7 +741,7 @@ else:
                 
                 st.success("✅ Metadata successfully stored and verified!")
                 
-                command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{vector_id}"'
+                command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-testing" --metadata "{vector_id}"'
                 try:
                     with st.spinner("📞 Initiating call..."):
                         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -640,7 +762,7 @@ else:
     st.markdown("---")
     st.markdown("""
         <div style='text-align: center; color: #64748b; padding: 1rem 0;'>
-            <strong>Livekit Telephonic Agent System</strong> • v1.0.0 • 
+            <strong>StackVoice Telephonic Agent System</strong> • v1.0.0 • 
             Powered by 💜 Sample Set
         </div>
     """, unsafe_allow_html=True)
