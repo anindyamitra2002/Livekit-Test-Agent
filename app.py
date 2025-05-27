@@ -661,6 +661,69 @@ else:
                     key="vad_min_silence"
                 )
 
+    def initiate_call_with_retry(phone_number, metadata, max_retries=3):
+        """Handle call initiation with automatic retries for both data verification and call initiation."""
+        for attempt in range(max_retries):
+            try:
+                # Generate new vector ID for each attempt
+                vector_id = f"call-{phone_number}-{int(time.time())}-{random.randint(100000, 999999)}"
+                
+                # Upsert data to Pinecone
+                index.upsert(
+                    vectors=[{"id": vector_id, "values": DUMMY_VECTOR, "metadata": metadata}],
+                    namespace=""
+                )
+                
+                # Verify data was stored successfully
+                data_verified = False
+                verification_retries = 15
+                
+                for verify_attempt in range(verification_retries):
+                    try:
+                        resp = index.fetch(ids=[vector_id], namespace="")
+                        if vector_id in resp.vectors:
+                            fetched_meta = resp.vectors[vector_id].metadata
+                            if fetched_meta == metadata:
+                                data_verified = True
+                                break
+                    except Exception as e:
+                        if verify_attempt < verification_retries - 1:
+                            time.sleep(1)
+                            continue
+                    
+                if not data_verified:
+                    if attempt < max_retries - 1:
+                        st.warning(f"Attempt {attempt + 1}: Data verification failed, retrying...")
+                        time.sleep(2)  # Wait before retry
+                        continue
+                    else:
+                        raise Exception("Failed to verify metadata storage after all retries")
+                
+                # If data is verified, initiate the call
+                command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{vector_id}"'
+                process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                stdout, stderr = process.communicate()
+                
+                if process.returncode == 0:
+                    return True, stdout.decode(), None
+                else:
+                    if attempt < max_retries - 1:
+                        st.warning(f"Attempt {attempt + 1}: Call initiation failed, retrying...")
+                        time.sleep(2)  # Wait before retry
+                        continue
+                    else:
+                        return False, None, stderr.decode()
+                    
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    st.warning(f"Attempt {attempt + 1}: Error occurred, retrying...")
+                    time.sleep(2)  # Wait before retry
+                    continue
+                else:
+                    return False, None, str(e)
+        
+        return False, None, "All retry attempts failed"
+
     # Handle Call Initiation
     if initiate_call:
         if not phone_number or not st.session_state.get('first_message'):
@@ -694,7 +757,6 @@ else:
                     'TTS_language': tts_language,
                     'TTS_cost_per_min': tts_cost,
                     'total_cost_per_min': sum(costs) if all(c is not None for c in costs) else None,
-                    # Add new configuration options
                     'use_retrieval': st.session_state.get('use_retrieval', False),
                     'auto_end_call': st.session_state.get('auto_end_call', False),
                     'background_sound': st.session_state.get('background_sound', False),
@@ -702,58 +764,22 @@ else:
                     'is_allow_interruptions': st.session_state.get('is_allow_interruptions', False),
                 }
                 
-                vector_id = f"call-{phone_number}-{int(time.time())}-{random.randint(100000, 999999)}"
-                
                 st.success("✅ Call configured successfully!")
                 
                 with st.expander("📊 Review Configuration"):
                     st.json(metadata)
-                    
-                data_verified = False
-                with st.spinner("📤 Sending call metadata..."):
-                    index.upsert(
-                        vectors=[{"id": vector_id, "values": DUMMY_VECTOR, "metadata": metadata}],
-                        namespace=""
-                    )
-                    
-                    # Verify data was stored successfully
-                    max_retries = 15
-                    retry_count = 0
-                    
-                    while not data_verified and retry_count < max_retries:
-                        try:
-                            resp = index.fetch(ids=[vector_id], namespace="")
-                            if vector_id in resp.vectors:
-                                fetched_meta = resp.vectors[vector_id].metadata
-                                if fetched_meta == metadata:
-                                    data_verified = True
-                                    break
-                        except Exception as e:
-                            st.warning(f"Attempt {retry_count + 1}: Waiting for data to be available...")
-                        
-                        time.sleep(1)
-                        retry_count += 1
-                    
-                if not data_verified:
-                    st.error("❌ Failed to verify metadata storage. Try Initiate call again.")
-                    st.stop()
                 
-                st.success("✅ Metadata successfully stored and verified!")
-                
-                command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{vector_id}"'
-                try:
-                    with st.spinner("📞 Initiating call..."):
-                        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        stdout, stderr = process.communicate()
-                        if process.returncode == 0:
-                            st.success("🎉 Call initiated successfully!")
+                with st.spinner("📤 Initiating call with automatic retries..."):
+                    success, stdout, error = initiate_call_with_retry(phone_number, metadata)
+                    
+                    if success:
+                        st.success("🎉 Call initiated successfully!")
+                        if stdout:
                             with st.expander("📋 Command output"):
-                                st.code(stdout.decode())
-                        else:
-                            st.error("❌ Error initiating call:")
-                            st.code(stderr.decode())
-                except Exception as e:
-                    st.error(f"❌ An error occurred while executing command: {str(e)}")
+                                st.code(stdout)
+                    else:
+                        st.error(f"❌ Failed to initiate call after all retries: {error}")
+                        
             except Exception as e:
                 st.error(f"❌ An error occurred: {str(e)}")
 
