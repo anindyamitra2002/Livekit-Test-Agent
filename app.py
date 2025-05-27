@@ -741,7 +741,7 @@ else:
                 
                 st.success("✅ Metadata successfully stored and verified!")
                 
-                command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-testing" --metadata "{vector_id}"'
+                command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{vector_id}"'
                 try:
                     with st.spinner("📞 Initiating call..."):
                         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
