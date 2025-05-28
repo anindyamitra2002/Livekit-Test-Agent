@@ -164,3 +164,5 @@ For support, please open an issue in the GitHub repository or contact the develo
 <div align="center">
 Made with 💜 by Sample Set
 </div>
+
+Remove-Item Env:\REDIS_PORT

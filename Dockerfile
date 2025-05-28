@@ -12,6 +12,7 @@ WORKDIR /app
 USER root
 RUN apt-get update && apt-get install -y \
     curl \
+    redis-tools \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSL https://get.livekit.io/cli | bash
 USER user
@@ -26,6 +27,6 @@ COPY --chown=user . /app
 # Set environment variables
 ENV STREAMLIT_SERVER_PORT=7860
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
-EXPOSE 7860
+EXPOSE 7860 6380
 # Command to run the application
 CMD ["streamlit", "run", "app.py", "--server.port", "7860"] 

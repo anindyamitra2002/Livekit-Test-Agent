@@ -3,6 +3,8 @@ import subprocess
 import os
 import re
 from pinecone import Pinecone, ServerlessSpec
+import redis
+import json
 import tempfile
 from dotenv import load_dotenv
 import random
@@ -12,6 +14,15 @@ from config import CONFIG, costs_per_min
 
 # Load environment variables
 load_dotenv()
+
+# Initialize Redis client for metadata transfer
+redis_client = redis.Redis(
+    host=os.getenv('REDIS_HOST', 'localhost'),
+    port=int(os.getenv('REDIS_PORT', 6380)),  # Azure Cache for Redis uses 6380
+    password=os.getenv('REDIS_PASSWORD', None),
+    ssl=os.getenv('REDIS_SSL', 'True').lower() == 'true',  # Enable SSL for Azure Cache
+    decode_responses=True
+)
 
 # Set page config first thing
 st.set_page_config(
@@ -151,17 +162,6 @@ else:
     # Initialize Pinecone
     api_key = os.getenv("PINECONE_API_KEY")
     pc = Pinecone(api_key=api_key)
-    INDEX_NAME = "parameters"
-    VECTOR_DIMENSION = 384
-    DUMMY_VECTOR = [0.5] * VECTOR_DIMENSION
-    if not pc.has_index(INDEX_NAME):
-        pc.create_index(
-            name=INDEX_NAME,
-            dimension=VECTOR_DIMENSION,
-            metric="cosine",
-            spec=ServerlessSpec(cloud="aws", region="us-east-1")
-        )
-    index = pc.Index(INDEX_NAME)
     assistant = pc.assistant.Assistant(assistant_name="test-rag")
 
     # Provider-dependent model mappings
@@ -665,42 +665,43 @@ else:
         """Handle call initiation with automatic retries for both data verification and call initiation."""
         for attempt in range(max_retries):
             try:
-                # Generate new vector ID for each attempt
-                vector_id = f"call-{phone_number}-{int(time.time())}-{random.randint(100000, 999999)}"
+                # Generate new data ID for each attempt
+                data_id = f"call-{phone_number}-{int(time.time())}-{random.randint(100000, 999999)}"
                 
-                # Upsert data to Pinecone
-                index.upsert(
-                    vectors=[{"id": vector_id, "values": DUMMY_VECTOR, "metadata": metadata}],
-                    namespace=""
+                # Store metadata in Redis with expiration (24 hours)
+                redis_client.setex(
+                    data_id,
+                    86400,  # 24 hours in seconds
+                    json.dumps(metadata)
                 )
-                time.sleep(1)  
+                
                 # Verify data was stored successfully
                 data_verified = False
-                verification_retries = 15
+                verification_retries = 3  # Reduced retries since Redis is faster
                 
                 for verify_attempt in range(verification_retries):
                     try:
-                        resp = index.fetch(ids=[vector_id], namespace="")
-                        if vector_id in resp.vectors:
-                            fetched_meta = resp.vectors[vector_id].metadata
-                            if fetched_meta == metadata:
+                        stored_data = redis_client.get(data_id)
+                        if stored_data:
+                            stored_meta = json.loads(stored_data)
+                            if stored_meta == metadata:
                                 data_verified = True
                                 break
                     except Exception as e:
                         if verify_attempt < verification_retries - 1:
-                            time.sleep(1)
+                            time.sleep(0.5)  # Reduced sleep time
                             continue
                     
                 if not data_verified:
                     if attempt < max_retries - 1:
                         st.warning(f"Attempt {attempt + 1}: Data verification failed, retrying...")
-                        time.sleep(2)  # Wait before retry
+                        time.sleep(1)  # Reduced wait time
                         continue
                     else:
                         raise Exception("Failed to verify metadata storage after all retries")
                 
                 # If data is verified, initiate the call
-                command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{vector_id}"'
+                command = f'lk dispatch create --new-room --agent-name "teliphonic-rag-agent-test" --metadata "{data_id}"'
                 process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 stdout, stderr = process.communicate()
                 
@@ -709,7 +710,7 @@ else:
                 else:
                     if attempt < max_retries - 1:
                         st.warning(f"Attempt {attempt + 1}: Call initiation failed, retrying...")
-                        time.sleep(2)  # Wait before retry
+                        time.sleep(1)  # Reduced wait time
                         continue
                     else:
                         return False, None, stderr.decode()
@@ -717,7 +718,7 @@ else:
             except Exception as e:
                 if attempt < max_retries - 1:
                     st.warning(f"Attempt {attempt + 1}: Error occurred, retrying...")
-                    time.sleep(2)  # Wait before retry
+                    time.sleep(1)  # Reduced wait time
                     continue
                 else:
                     return False, None, str(e)
