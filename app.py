@@ -765,7 +765,7 @@ else:
                     'is_allow_interruptions': st.session_state.get('is_allow_interruptions', False),
                 }
                 
-                st.success("✅ Call configured successfully!")
+                st.success("✅ Call configured successfully.")
                 
                 with st.expander("📊 Review Configuration"):
                     st.json(metadata)
